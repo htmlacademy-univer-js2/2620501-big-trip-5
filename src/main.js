@@ -1,13 +1,20 @@
-import TaskButtonElement from './view/task-button-element.js';
 import FilterElement from './view/filter-element.js';
 import {render} from './render.js';
 import BoardPresenter from './presenter/presenter.js';
+import PointsModel from './model/points-model.js';
+import SortView from './view/sort-view.js';
 
-const mainElement = document.querySelector('.page-main');
+const mainElement = document.querySelector('.trip-events');
 const headerElement = document.querySelector('.trip-controls__filters');
-const presenter = new BoardPresenter({boardContainer: mainElement});
 
-render(new TaskButtonElement(), headerElement);
+const pointsModel = new PointsModel();
+const boardPresenter = new BoardPresenter({
+  boardContainer: mainElement,
+  pointsModel
+});
+
 render(new FilterElement(), headerElement);
+boardPresenter.init();
 
-presenter.init();
+const sortComponent = new SortView();
+render(sortComponent, mainElement);
