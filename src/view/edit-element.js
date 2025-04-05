@@ -63,7 +63,7 @@ const pontEditTemplate = (point = {
       <div class="event__type-list">
         <fieldset class="event__type-group">
           <legend class="visually-hidden">Event type</legend>
-          ${TYPES.map((type) => `
+          ${TYPE.map((type) => `
             <div class="event__type-item">
               <input id="event-type-${type}-1" class="event__type-input  visually-hidden" type="radio" name="event-type" value="${type}" ${type === point.type ? 'checked' : ''}>
               <label class="event__type-label  event__type-label--${type}" for="event-type-${type}-1">${type}</label>
@@ -78,7 +78,7 @@ const pontEditTemplate = (point = {
       </label>
       <input class="event__input  event__input--destination" id="event-destination-1" type="text" name="event-destination" value="${destination ? destination.name : ''}" list="destination-list-1">
       <datalist id="destination-list-1">
-        ${DESTINATIONS.map((dest) => `<option value="${dest.name}"></option>`).join('')}
+        ${DESTINATION.map((dest) => `<option value="${dest.name}"></option>`).join('')}
       </datalist>
     </div>
     <div class="event__field-group  event__field-group--time">
@@ -97,8 +97,8 @@ const pontEditTemplate = (point = {
       <span class="visually-hidden">Open event</span>
     </button>
     </header>
-    ${createOffersTemplate(availableOffers, point.offers)}
-    ${createDestinationTemplate(destination)}
+    ${offerTemplate(availableOffers, point.offers)}
+    ${destinationTemplate(destination)}
   </form>`;
 };
 
