@@ -1,4 +1,4 @@
-import AbstractElement from './abstract-element.js';
+import AbstractView from '../framework/view/abstract-view.js';
 
 const sortTemplate = () => (
   `<form class="trip-events__trip-sort  trip-sort" action="#" method="get">
@@ -25,7 +25,7 @@ const sortTemplate = () => (
   </form>`
 );
 
-export default class SortView extends AbstractElement {
+export default class SortView extends AbstractView {
   get template() {
     return sortTemplate();
   }

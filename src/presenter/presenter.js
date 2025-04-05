@@ -1,29 +1,59 @@
-import BoardElement from '../view/board-element.js';
+import {render, replace} from '../framework/render.js';
+import PointElement from '../view/point-element.js';
+import PointEditElement from '../view/edit-element.js';
 import SortView from '../view/sort-view.js';
-import TaskListElement from '../view/task-list-element.js';
-import TaskElement from '../view/task-element.js';
-import EditElement from '../view/edit-element.js';
-import MoreButtonElement from '../view/more-button-element.js';
-import {render} from '../render.js';
 
 export default class BoardPresenter {
-  component = new BoardElement();
-  taskListComponent = new TaskListElement();
+  #container = null;
+  #pointsModel = null;
+  #tripEvents = null;
 
-  constructor({boardContainer}) {
-    this.boardContainer = boardContainer;
-  }
+  #component = null;
+  #editComponent = null;
 
-  init() {
-    render(this.component, this.boardContainer);
-    render(new SortView(), this.component.getElement());
-    render(this.taskListComponent, this.component.getElement());
-    render(new EditElement(), this.taskListComponent.getElement());
+  constructor({container, pointsModel}) {
+    this.#container = container;
+    const points = this.#pointsModel.points;
+    render(new SortView(), this.#container);
 
-    for (let i = 0; i < 3; i++) {
-      render(new TaskElement(), this.taskListComponent.getElement());
+    this.#tripEvents = document.createElement('ul');
+    this.#tripEvents.classList.add('trip-events__list');
+    this.#container.append(this.#tripEvents);
+
+    for (let i = 0; i < points.length; i++) {
+      this.#renderPoint(points[i]);
     }
-
-    render(new MoreButtonElement(), this.component.getElement());
   }
+
+  #renderPoint(point) {
+    this.#component = new PointElement({
+      point: point,
+      onEditClick: () => {
+        replace(this.#editComponent, this.#component);
+        document.addEventListener('keydown', this.#escKeyDownHandler);
+      }
+    });
+
+    this.#editComponent = new PointEditElement({
+      point: point,
+      onFormSubmit: () => {
+        replace(this.#component, this.#editComponent);
+        document.removeEventListener('keydown', this.#escKeyDownHandler);
+      },
+      onRollUpClick: () => {
+        replace(this.#component, this.#editComponent);
+        document.removeEventListener('keydown', this.#escKeyDownHandler);
+      }
+    });
+
+    render(this.#component, this.#tripEvents);
+  }
+
+  #escKeyDownHandler = (evt) => {
+    if (evt.key === 'Escape' || evt.key === 'Esc') {
+      evt.preventDefault();
+      replace(this.#component, this.#editComponent);
+      document.removeEventListener('keydown', this.#escKeyDownHandler);
+    }
+  };
 }

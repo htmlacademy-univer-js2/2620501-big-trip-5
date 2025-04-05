@@ -1,12 +1,10 @@
-import AbstractElement from './abstract-element.js';
+import AbstractView from '../framework/view/abstract-view.js';
 import {DESTINATION, EXTRA_TYPE} from '../point/point.js';
 
 const pointTemplate = (point) => {
   const destination = DESTINATION.find((dest) => dest.id === point.destination);
-  const pointOffers = point.offers.map((id) => {
-    const offersType = EXTRA_TYPE[point.type] || [];
-    return offersType.find((offer) => offer.id === id);
-  });
+  const offersType = EXTRA_TYPE[point.type] || [];
+  const selectedOffers = offersType.filter((offer) => point.offers.includes(offer.id));
 
   const formatDate = (date) => {
     const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
@@ -19,7 +17,6 @@ const pointTemplate = (point) => {
     const diff = to - from;
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff / (1000 * 60)) % 60);
-
     if (hours === 0) {
       return `${minutes}M`;
     }
@@ -28,16 +25,16 @@ const pointTemplate = (point) => {
 
   return `<li class="trip-events__item">
     <div class="event">
-      <time class="event__date" datetime="${point.dateFrom}">${formatDate(point.dateFrom)}</time>
+      <time class="event__date" datetime="${point.dateFrom.toISOString()}">${formatDate(point.dateFrom)}</time>
       <div class="event__type">
         <img class="event__type-icon" width="42" height="42" src="img/icons/${point.type}.png" alt="Event type icon">
       </div>
-      <h3 class="event__title">${point.type} ${destination.name}</h3>
+      <h3 class="event__title">${point.type} ${destination ? destination.name : ''}</h3>
       <div class="event__schedule">
         <p class="event__time">
-          <time class="event__start-time" datetime="${point.dateFrom}">${formatTime(point.dateFrom)}</time>
+          <time class="event__start-time" datetime="${point.dateFrom.toISOString()}">${formatTime(point.dateFrom)}</time>
           &mdash;
-          <time class="event__end-time" datetime="${point.dateTo}">${formatTime(point.dateTo)}</time>
+          <time class="event__end-time" datetime="${point.dateTo.toISOString()}">${formatTime(point.dateTo)}</time>
         </p>
         <p class="event__duration">${duration(point.dateFrom, point.dateTo)}</p>
       </div>
@@ -46,7 +43,7 @@ const pointTemplate = (point) => {
       </p>
       <h4 class="visually-hidden">Offers:</h4>
       <ul class="event__selected-offers">
-        ${pointOffers.map((offer) => `
+        ${selectedOffers.map((offer) => `
           <li class="event__offer">
             <span class="event__offer-title">${offer.title}</span>
             &plus;&euro;&nbsp;
@@ -67,15 +64,24 @@ const pointTemplate = (point) => {
   </li>`;
 };
 
-export default class PointElement extends AbstractElement {
+export default class PointElement extends AbstractView {
   #point = null;
+  #editClick = null;
 
-  constructor(point) {
+  constructor({point, onEditClick}) {
     super();
     this.#point = point;
+    this.#editClick = onEditClick;
+    this.element.querySelector('.event__rollup-btn')
+      .addEventListener('click', this.#editClickHandler);
   }
 
   get template() {
     return pointTemplate(this.#point);
   }
+
+  #editClickHandler = (evt) => {
+    evt.preventDefault();
+    this.#editClick();
+  };
 }
