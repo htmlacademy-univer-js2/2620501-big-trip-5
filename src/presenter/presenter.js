@@ -1,20 +1,59 @@
-import {render, replace} from '../framework/render.js';
+import {render, replace, remove} from '../framework/render.js';
 import PointElement from '../view/point-element.js';
 import PointEditElement from '../view/edit-element.js';
 import SortView from '../view/sort-view.js';
+import EmptyPointsView from '../view/empty-points-view.js';
 
 export default class BoardPresenter {
   #container = null;
-  #pointsModel = null;
   #tripEvents = null;
+  #routePoints = [];
+  #destinations = [];
+  #offersByType = {};
 
   #component = null;
-  #editComponent = null;
+  #emptyComponent = null;
 
-  constructor({container, pointsModel}) {
+  constructor({container}) {
     this.#container = container;
-    const points = this.#pointsModel.points;
-    render(new SortView(), this.#container);
+
+  }
+
+  init(routePoints, destinations, offersByType) {
+    this.#routePoints = routePoints;
+    this.#destinations = destinations;
+    this.#offersByType = offersByType;
+
+    this.#clearBoard();
+
+    this.#renderBoard();
+  }
+
+  #clearBoard() {
+    if (this.#tripEvents) {
+      this.#tripEvents.innerHTML = '';
+      remove(this.#tripEvents);
+      this.#tripEvents = null;
+    }
+    if (this.#component) {
+      remove(this.#component);
+      this.#component = null;
+    }
+    if (this.#emptyComponent) {
+      remove(this.#emptyComponent);
+      this.#emptyComponent = null;
+    }
+  }
+
+  #renderBoard() {
+    if (this.#routePoints.length === 0) {
+      this.#emptyComponent = new EmptyPointsView();
+      render(this.#emptyComponent, this.container);
+      return;
+    }
+
+    this.#component = new SortView();
+    render(this.#component, this.container);
 
     this.#tripEvents = document.createElement('ul');
     this.#tripEvents.classList.add('trip-events__list');
@@ -26,34 +65,37 @@ export default class BoardPresenter {
   }
 
   #renderPoint(point) {
-    this.#component = new PointElement({
+    let pointComponent = null;
+    let pointEditComponent = null;
+    function escKeyDownHandler(evt) {
+      if (evt.key === 'Escape' || evt.key === 'Esc') {
+        evt.preventDefault();
+        replace(pointComponent, pointEditComponent);
+        document.removeEventListener('keydown', escKeyDownHandler);
+      }
+    }
+    pointComponent = new PointElement({
       point: point,
       onEditClick: () => {
-        replace(this.#editComponent, this.#component);
-        document.addEventListener('keydown', this.#escKeyDownHandler);
+        replace(pointEditComponent, pointComponent);
+        document.addEventListener('keydown', escKeyDownHandler);
       }
     });
 
-    this.#editComponent = new PointEditElement({
+    pointEditComponent = new PointEditElement({
       point: point,
+      destinations: this.#destinations,
+      offersByType: this.#offersByType,
       onFormSubmit: () => {
-        replace(this.#component, this.#editComponent);
-        document.removeEventListener('keydown', this.#escKeyDownHandler);
+        replace(pointComponent, pointEditComponent);
+        document.removeEventListener('keydown', escKeyDownHandler);
       },
       onRollUpClick: () => {
-        replace(this.#component, this.#editComponent);
-        document.removeEventListener('keydown', this.#escKeyDownHandler);
+        replace(pointComponent, pointEditComponent);
+        document.removeEventListener('keydown', escKeyDownHandler);
       }
     });
 
-    render(this.#component, this.#tripEvents);
+    render(pointComponent, this.#tripEvents);
   }
-
-  #escKeyDownHandler = (evt) => {
-    if (evt.key === 'Escape' || evt.key === 'Esc') {
-      evt.preventDefault();
-      replace(this.#component, this.#editComponent);
-      document.removeEventListener('keydown', this.#escKeyDownHandler);
-    }
-  };
 }
