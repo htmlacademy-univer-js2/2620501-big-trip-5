@@ -74,7 +74,7 @@ export default class BoardPresenter {
         document.removeEventListener('keydown', escKeyDownHandler);
       }
     }
-    pointComponent = new PointView({
+    pointComponent = new PointElement({
       point: point,
       onEditClick: () => {
         replace(pointEditComponent, pointComponent);
