@@ -59,8 +59,8 @@ export default class BoardPresenter {
     this.#tripEvents.classList.add('trip-events__list');
     this.#container.append(this.#tripEvents);
 
-    for (let i = 0; i < points.length; i++) {
-      this.#renderPoint(points[i]);
+    for (let i = 0; i < this.#routePoints.length; i++) {
+      this.#renderPoint(this.#routePoints[i]);
     }
   }
 
@@ -74,7 +74,7 @@ export default class BoardPresenter {
         document.removeEventListener('keydown', escKeyDownHandler);
       }
     }
-    pointComponent = new PointElement({
+    pointComponent = new PointView({
       point: point,
       onEditClick: () => {
         replace(pointEditComponent, pointComponent);

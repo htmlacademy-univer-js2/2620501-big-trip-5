@@ -9,7 +9,7 @@ const pointTemplate = (point) => {
     return `${months[new Date(date).getMonth()]} ${new Date(date).getDate()}`;
   };
 
-  const formatTime = (date) => new Date(date).toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false}); 
+  const formatTime = (date) => new Date(date).toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false});
 
   const getDuration = (from, to) => {
     const diff = new Date(to) - new Date(from);
@@ -72,9 +72,11 @@ export default class PointElement extends AbstractView {
     this.element.querySelector('.event__rollup-btn')
       .addEventListener('click', this.#editClickHandler);
   }
+
   get template() {
     return pointTemplate(this.#point);
   }
+  
   #editClickHandler = (evt) => {
     evt.preventDefault();
     this.#handleEditClick();
