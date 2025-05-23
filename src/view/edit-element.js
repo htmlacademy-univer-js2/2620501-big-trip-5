@@ -138,6 +138,7 @@ export default class PointEditElement extends AbstractView {
     evt.preventDefault();
     this.#handleForm();
   };
+  
   #rollUpClick = (evt) => {
     evt.preventDefault();
     this.#handleRollUp();
