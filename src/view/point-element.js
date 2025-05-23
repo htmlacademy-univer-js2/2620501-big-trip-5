@@ -76,7 +76,7 @@ export default class PointElement extends AbstractView {
   get template() {
     return pointTemplate(this.#point);
   }
-  
+
   #editClickHandler = (evt) => {
     evt.preventDefault();
     this.#handleEditClick();
