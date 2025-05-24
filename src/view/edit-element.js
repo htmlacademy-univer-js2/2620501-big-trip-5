@@ -11,7 +11,7 @@ const offerTemplate = (available, selected) => {
     <div class="event__available-offers">
       ${available.map((offer) => `
         <div class="event__offer-selector">
-        <input class="event__offer-checkbox visually-hidden" id="event-offer-${offer.id}" type="checkbox" name="event-offer-${offer.id}" data-offer-id="${offer.id}" ${selectedOffersIds.includes(offer.id) ? 'checked' : ''}>
+        <input class="event__offer-checkbox visually-hidden" id="event-offer-${offer.id}" type="checkbox" name="event-offer-${offer.id}" data-offer-id="${offer.id}" ${selected.includes(offer.id) ? 'checked' : ''}>
           <label class="event__offer-label" for="event-offer-${offer.id}">
             <span class="event__offer-title">${offer.title}</span>
             +€
@@ -27,7 +27,7 @@ const destinationTemplate = (destination) => {
   if (!destination || !destination.name) {
     return '';
   }
-    const picturesTemplate = destination.pictures && destination.pictures.length
+  const picturesTemplate = destination.pictures && destination.pictures.length
     ? `<div class="event__photos-container">
         <div class="event__photos-tape">
           ${destination.pictures.map((picture) => `
@@ -135,7 +135,7 @@ export default class PointEditElement extends AbstractStatefulView {
   }
 
   get template() {
-    return createPointEditTemplate(this.#point, this.#allDestinations, this.#allOffers);
+    return pointEditTemplate(this.#point, this.#allDestinations, this.#allOffers);
   }
 
   _restoreHandlers() {
@@ -151,15 +151,15 @@ export default class PointEditElement extends AbstractStatefulView {
 
   #formSubmit = (evt) => {
     evt.preventDefault();
-    this.#handleForm(PointEditView.parseStateToPoint(this.#point));
+    this.#handleForm(PointEditElement.parseStateToPoint(this.#point));
   };
 
   #rollUpClick = (evt) => {
     evt.preventDefault();
     this.#handleRollUp();
   };
-
-   #typeChange = (evt) => {
+  
+  #typeChange = (evt) => {
     evt.preventDefault();
     if (evt.target.classList.contains('event__type-input')) {
       this.updateElement({
@@ -198,7 +198,7 @@ export default class PointEditElement extends AbstractStatefulView {
   };
 
   reset(point) {
-    this.updateElement(PointEditView.parsePointToState(point));
+    this.updateElement(PointEditElement.parsePointToState(point));
   }
 
   static PointToState(point) {
