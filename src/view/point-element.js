@@ -11,10 +11,10 @@ const pointTemplate = (point) => {
 
   const formatTime = (date) => new Date(date).toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false});
 
-  const getDuration = (from, to) => {
-    const diff = new Date(to) - new Date(from);
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff / (1000 * 60)) % 60);
+  const setDuration = (from, to) => {
+    const difference = new Date(to) - new Date(from);
+    const hours = Math.floor(difference / (1000 * 60 * 60));
+    const minutes = Math.floor((difference / (1000 * 60)) % 60);
 
     if (hours === 0) {
       return `${minutes}M`;
@@ -35,7 +35,7 @@ const pointTemplate = (point) => {
           —
           <time class="event__end-time" datetime="${point.dateTo}">${formatTime(point.dateTo)}</time>
         </p>
-        <p class="event__duration">${getDuration(point.dateFrom, point.dateTo)}</p>
+        <p class="event__duration">${setDuration(point.dateFrom, point.dateTo)}</p>
       </div>
       <p class="event__price">
         &euro;&nbsp;<span class="event__price-value">${point.basePrice}</span>
@@ -64,21 +64,32 @@ const pointTemplate = (point) => {
 };
 export default class PointElement extends AbstractView {
   #point = null;
-  #handleEditClick = null;
-  constructor({point, onEditClick}) {
+  #editClick = null;
+  #favoriteClick = null;
+
+  constructor({point, onEditClick, onFavoriteClick}) {
     super();
     this.#point = point;
-    this.#handleEditClick = onEditClick;
+    this.#editClick = onEditClick;
+    this.#favoriteClick = onFavoriteClick;
+
     this.element.querySelector('.event__rollup-btn')
       .addEventListener('click', this.#editClickHandler);
+    this.element.querySelector('.event__favorite-btn')
+      .addEventListener('click', this.#favoriteClickHandler);
   }
 
   get template() {
     return pointTemplate(this.#point);
   }
-  
+
   #editClickHandler = (evt) => {
     evt.preventDefault();
-    this.#handleEditClick();
+    this.#editClick();
+  };
+
+  #favoriteClickHandler = (evt) => {
+    evt.preventDefault();
+    this.#favoriteClick();
   };
 }
