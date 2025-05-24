@@ -18,6 +18,7 @@ export default class Presenter {
   constructor({container}) {
     this.#container = container;
   }
+
   init(routePoints, destinations, offersByType) {
     this.#routePoints = [...routePoints];
     this.#destinations = destinations;
@@ -56,6 +57,7 @@ export default class Presenter {
     this.#routePoints = this.#routePoints.map((point) => point.id === updatedPoint.id ? updatedPoint : point);
     this.#pointPresenters.get(updatedPoint.id).init(updatedPoint);
   };
+
   #modeChange = (activePresenter) => {
     this.#pointPresenters.forEach((presenter) => {
       if (presenter !== activePresenter) {
