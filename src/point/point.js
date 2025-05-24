@@ -54,7 +54,7 @@ export const EXTRA_TYPE = {
   ]
 };
 
-let pointId  = 0;
+let pointId = 0;
 const uniqueId = () => pointId ++;
 
 export const generatePoint = () => {
@@ -62,16 +62,16 @@ export const generatePoint = () => {
   const availableOffers = EXTRA_TYPE[type] || [];
 
   const startDate = new Date('2023-10-01T00:00:00.000Z');
-  const setDay = getRandomInteger(0, 10);
-  const setHour = getRandomInteger(8, 18);
-  const setMinute = getRandomInteger(0, 59);
+  const setDay = getRandomInt(0, 10);
+  const setHour = getRandomInt(8, 18);
+  const setMinute = getRandomInt(0, 59);
   const dateFrom = new Date(startDate);
 
   dateFrom.setDate(startDate.getDate() + setDay);
   dateFrom.setUTCHours(setHour, setMinute, 0, 0);
 
-  const durationHours = getRandomInteger(1, 5);
-  const durationMinutes = getRandomInteger(0, 59);
+  const durationHours = getRandomInt(1, 5);
+  const durationMinutes = getRandomInt(0, 59);
   const dateTo = new Date(dateFrom);
   dateTo.setUTCHours(dateFrom.getUTCHours() + durationHours, dateFrom.getUTCMinutes() + durationMinutes, 0, 0);
 
@@ -89,6 +89,6 @@ export const generatePoint = () => {
 };
 
 export const generateRoutePoint = (count) => {
-  pointId  = 0;
+  pointId = 0;
   return Array.from({length: count}, generatePoint);
 };
