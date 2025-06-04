@@ -251,9 +251,11 @@ export default class PointEditElement extends AbstractStatefulView {
   reset(point) {
     this.updateElement(PointEditElement.PointToState(point));
   }
+
   static PointToState(point) {
     return structuredClone(point);
   }
+
   static StateToPoint(state) {
     return structuredClone(state);
   }
