@@ -1,5 +1,8 @@
 import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
 import {TYPE} from '../point/point.js';
+import flatpicker from 'flatpickr';
+import 'flatpickr/dist/flatpickr.min.css';
+import dayjs from 'dayjs';
 
 const offerTemplate = (available, selected) => {
   if (!available || !available.length) {
@@ -47,20 +50,7 @@ const destinationTemplate = (destination) => {
 const pointEditTemplate = (point, destinations, offersByType) => {
   const currentDestination = point.destination;
   const availableOffers = offersByType[point.type] || [];
-  const formatValueDate = (dateString) => {
-    if (!dateString) {
-      return '';
-    }
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        return '';
-      }
-      return `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}/${String(date.getFullYear()).slice(-2)} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-    } catch (e) {
-      return '';
-    }
-  };
+  const formatDate = (dateString) => dateString ? dayjs(dateString).format('DD/MM/YY HH:mm') : '';
 
   return `<form class="event event--edit" action="#" method="post">
     <header class="event__header">
@@ -93,10 +83,10 @@ const pointEditTemplate = (point, destinations, offersByType) => {
       </div>
       <div class="event__field-group  event__field-group--time">
         <label class="visually-hidden" for="event-start-time-1">From</label>
-        <input class="event__input  event__input--time" id="event-start-time-1" type="text" name="event-start-time" value="${formatValueDate(point.dateFrom)}">
+        <input class="event__input  event__input--time" id="event-start-time-1" type="text" name="event-start-time" value="${formatDate(point.dateFrom)}">
         —
         <label class="visually-hidden" for="event-end-time-1">To</label>
-        <input class="event__input  event__input--time" id="event-end-time-1" type="text" name="event-end-time" value="${formatValueDate(point.dateTo)}">
+        <input class="event__input  event__input--time" id="event-end-time-1" type="text" name="event-end-time" value="${formatDate(point.dateTo)}">
       </div>
       <div class="event__field-group  event__field-group--price">
         <label class="event__label" for="event-price-1">
@@ -122,6 +112,8 @@ export default class PointEditElement extends AbstractStatefulView {
   #handleRollUp = null;
   #allDestinations = [];
   #allOffers = {};
+  #dateFrom = null;
+  #dateTo = null;
 
   constructor({point, onFormSubmit, onRollUpClick, destinations, offersByType}) {
     super();
@@ -138,6 +130,18 @@ export default class PointEditElement extends AbstractStatefulView {
     return pointEditTemplate(this.#point, this.#allDestinations, this.#allOffers);
   }
 
+  removeElement() {
+    super.removeElement();
+    if (this.#dateFrom) {
+      this.#dateFrom.destroy();
+      this.#dateFrom = null;
+    }
+    if (this.#dateTo) {
+      this.#dateTo.destroy();
+      this.#dateTo = null;
+    }
+  }
+
   _restoreHandlers() {
     this.element.addEventListener('submit', this.#formSubmit);
     this.element.querySelector('.event__rollup-btn').addEventListener('click', this.#rollUpClick);
@@ -147,6 +151,53 @@ export default class PointEditElement extends AbstractStatefulView {
     if (offersElement) {
       offersElement.addEventListener('change', this.#offerChange);
     }
+    this.#setDatepick();
+  }
+
+  #setDatepick() {
+    if (this.#dateFrom) {
+      this.#dateFrom.destroy();
+      this.#dateFrom = null;
+    }
+    if (this.#dateTo) {
+      this.#dateTo.destroy();
+      this.#dateTo = null;
+    }
+
+    const commonConfig = {
+      enableTime: true,
+      time24hr: true,
+      dateFormat: 'Z',
+      altInput: true,
+      altFormat: 'd/m/y H:i',
+      allowInput: true,
+    };
+
+    this.#dateFrom = flatpicker(
+      this.element.querySelector('#event-start-time-1'),
+      {
+        ...commonConfig,
+        defaultDate: this._state.dateFrom || 'today',
+        onClose: ([userDate]) => {
+          this.updateElement({ dateFrom: userDate ? userDate.toISOString() : null });
+          if (this.#dateTo) {
+            this.#dateTo.set('minDate', userDate || null);
+          }
+        },
+      }
+    );
+
+    this.#dateTo = flatpicker(
+      this.element.querySelector('#event-end-time-1'),
+      {
+        ...commonConfig,
+        defaultDate: this._state.dateTo || 'today',
+        minDate: this._state.dateFrom || null,
+        onClose: ([userDate]) => {
+          this.updateElement({ dateTo: userDate ? userDate.toISOString() : null });
+        },
+      }
+    );
   }
 
   #formSubmit = (evt) => {
@@ -158,7 +209,7 @@ export default class PointEditElement extends AbstractStatefulView {
     evt.preventDefault();
     this.#handleRollUp();
   };
-  
+
   #typeChange = (evt) => {
     evt.preventDefault();
     if (evt.target.classList.contains('event__type-input')) {
@@ -198,16 +249,14 @@ export default class PointEditElement extends AbstractStatefulView {
   };
 
   reset(point) {
-    this.updateElement(PointEditElement.parsePointToState(point));
+    this.updateElement(PointEditElement.PointToState(point));
   }
 
   static PointToState(point) {
-    const clonedPoint = structuredClone(point);
-    return {...clonedPoint};
+    return structuredClone(point);
   }
 
   static StateToPoint(state) {
-    const point = {...state};
-    return point;
+    return structuredClone(state);
   }
 }

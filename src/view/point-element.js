@@ -1,41 +1,29 @@
 import AbstractView from '../framework/view/abstract-view.js';
+import {formatingMonthDay, formatingHourMinute, formatingDuration} from '../utils.js';
 
 const pointTemplate = (point) => {
   const destinationName = point.destination?.name || 'Unknown destination';
   const selectedOffers = point.selectedOffers || [];
 
-  const formatDate = (date) => {
-    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-    return `${months[new Date(date).getMonth()]} ${new Date(date).getDate()}`;
-  };
-
-  const formatTime = (date) => new Date(date).toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false});
-
-  const setDuration = (from, to) => {
-    const difference = new Date(to) - new Date(from);
-    const hours = Math.floor(difference / (1000 * 60 * 60));
-    const minutes = Math.floor((difference / (1000 * 60)) % 60);
-
-    if (hours === 0) {
-      return `${minutes}M`;
-    }
-    return `${String(hours).padStart(2, '0')}H ${String(minutes).padStart(2, '0')}M`;
-  };
+  const mainDate = formatingMonthDay(point.dateFrom);
+  const timeFrom = formatingHourMinute(point.dateFrom);
+  const timeTo = formatingHourMinute(point.dateTo);
+  const duration = formatingDuration(point.dateFrom, point.dateTo);
 
   return `<li class="trip-events__item">
     <div class="event">
-      <time class="event__date" datetime="${point.dateFrom}">${formatDate(point.dateFrom)}</time>
+      <time class="event__date" datetime="${point.dateFrom}">${mainDate}</time>
       <div class="event__type">
         <img class="event__type-icon" width="42" height="42" src="img/icons/${point.type}.png" alt="Event type icon">
       </div>
       <h3 class="event__title">${point.type} ${destinationName}</h3>
       <div class="event__schedule">
         <p class="event__time">
-          <time class="event__start-time" datetime="${point.dateFrom}">${formatTime(point.dateFrom)}</time>
+          <time class="event__start-time" datetime="${point.dateFrom}">${timeFrom}</time>
           —
-          <time class="event__end-time" datetime="${point.dateTo}">${formatTime(point.dateTo)}</time>
+          <time class="event__end-time" datetime="${point.dateTo}">${timeTo}</time>
         </p>
-        <p class="event__duration">${setDuration(point.dateFrom, point.dateTo)}</p>
+        <p class="event__duration">${duration}</p>
       </div>
       <p class="event__price">
         &euro;&nbsp;<span class="event__price-value">${point.basePrice}</span>
