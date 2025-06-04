@@ -14,7 +14,7 @@ const offerTemplate = (available, selected) => {
     <div class="event__available-offers">
       ${available.map((offer) => `
         <div class="event__offer-selector">
-        <input class="event__offer-checkbox visually-hidden" id="event-offer-${offer.id}" type="checkbox" name="event-offer-${offer.id}" data-offer-id="${offer.id}" ${selectedOffersIds.includes(offer.id) ? 'checked' : ''}>
+        <input class="event__offer-checkbox visually-hidden" id="event-offer-${offer.id}" type="checkbox" name="event-offer-${offer.id}" data-offer-id="${offer.id}" ${selected.includes(offer.id) ? 'checked' : ''}>
           <label class="event__offer-label" for="event-offer-${offer.id}">
             <span class="event__offer-title">${offer.title}</span>
             +€
@@ -30,7 +30,7 @@ const destinationTemplate = (destination) => {
   if (!destination || !destination.name) {
     return '';
   }
-    const picturesTemplate = destination.pictures && destination.pictures.length
+  const picturesTemplate = destination.pictures && destination.pictures.length
     ? `<div class="event__photos-container">
         <div class="event__photos-tape">
           ${destination.pictures.map((picture) => `
@@ -251,11 +251,9 @@ export default class PointEditElement extends AbstractStatefulView {
   reset(point) {
     this.updateElement(PointEditElement.PointToState(point));
   }
-  
   static PointToState(point) {
     return structuredClone(point);
   }
-  
   static StateToPoint(state) {
     return structuredClone(state);
   }
