@@ -42,7 +42,7 @@ export default class Presenter {
     }
   }
 
-   get destinations() {
+  get destinations() {
     return this.#pointModel.destinations;
   }
 
