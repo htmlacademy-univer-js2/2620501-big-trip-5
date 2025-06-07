@@ -93,7 +93,7 @@ const pointEditTemplate = (point, destinations, offersByType) => {
           <span class="visually-hidden">Price</span>
           €
         </label>
-        <input class="event__input  event__input--price" id="event-price-1" type="text" name="event-price" value="${point.basePrice}">
+        <input class="event__input  event__input--price" id="event-price-1" type="number" name="event-price" value="${point.basePrice}" min="0">
       </div>
       <button class="event__save-btn  btn  btn--blue" type="submit">Save</button>
       <button class="event__reset-btn" type="reset">${point.id !== undefined ? 'Delete' : 'Cancel'}</button> 
@@ -108,26 +108,28 @@ const pointEditTemplate = (point, destinations, offersByType) => {
 
 export default class PointEditElement extends AbstractStatefulView {
   #point = null;
-  #handleForm = null;
-  #handleRollUp = null;
-  #allDestinations = [];
+  #formSubmit = null;
+  #rollUpClick = null;
+  #destinations = [];
   #allOffers = {};
   #dateFrom = null;
   #dateTo = null;
+  #deleteClick = null;
 
-  constructor({point, onFormSubmit, onRollUpClick, destinations, offersByType}) {
+  constructor({point, formSubmit, rollUpClick, destinations, allOffersByType, deleteClick}) {
     super();
     this.#point = point;
-    this.#handleForm = onFormSubmit;
-    this.#handleRollUp = onRollUpClick;
-    this.#allDestinations = destinations;
-    this.#allOffers = offersByType;
+    this.#formSubmit = formSubmit;
+    this.#rollUpClick = rollUpClick;
+    this.#destinations = destinations;
+    this.#allOffers = allOffersByType;
+    this.#deleteClick = deleteClick;
 
     this._restoreHandlers();
   }
 
   get template() {
-    return pointEditTemplate(this.#point, this.#allDestinations, this.#allOffers);
+    return pointEditTemplate(this.#point, this.#destinations, this.#allOffers);
   }
 
   removeElement() {
@@ -151,6 +153,15 @@ export default class PointEditElement extends AbstractStatefulView {
     if (offersElement) {
       offersElement.addEventListener('change', this.#offerChange);
     }
+
+    const resetButton = this.element.querySelector('.event__reset-btn');
+    if (resetButton && this.#deleteClick) {
+      resetButton.addEventListener('click', this.#resetButtonClick);
+    }
+
+    this.element.querySelector('.event__input--price')
+      .addEventListener('input', this.#priceInput);
+
     this.#setDatepick();
   }
 
@@ -202,12 +213,16 @@ export default class PointEditElement extends AbstractStatefulView {
 
   #formSubmit = (evt) => {
     evt.preventDefault();
-    this.#handleForm(PointEditElement.parseStateToPoint(this.#point));
+    const pointSubmit = PointEditView.parseStateToPoint(this._state);
+    if (typeof pointSubmit.basePrice !== 'number') {
+      pointSubmit.basePrice = Number(pointSubmit.basePrice) || 0;
+    }
+    this.#formSubmit(pointSubmit);
   };
 
   #rollUpClick = (evt) => {
     evt.preventDefault();
-    this.#handleRollUp();
+    this.#rollUpClick();
   };
 
   #typeChange = (evt) => {
@@ -222,15 +237,18 @@ export default class PointEditElement extends AbstractStatefulView {
 
   #destinationChange = (evt) => {
     evt.preventDefault();
-    const selectedDestination = this.#allDestinations.find((dest) => dest.name === evt.target.value);
-    if (selectedDestination) {
+     const enterValue = evt.target.value.trim();
+
+    const selectDestination = this.#destinations.find(
+      (dest) => dest.name.toLowerCase() === enterValue.toLowerCase()
+    );
+
+    if (selectDestination) {
       this.updateElement({
-        destination: selectedDestination
+        destination: selectDestination,
       });
     } else {
-      this.updateElement({
-        destination: { name: evt.target.value, description: '', pictures: [] }
-      });
+      evt.target.value = '';
     }
   };
 
@@ -248,12 +266,41 @@ export default class PointEditElement extends AbstractStatefulView {
     }
   };
 
+  #resetButtonClick = (evt) => {
+    evt.preventDefault();
+    this.#deleteClick(PointEditView.parseStateToPoint(this._state));
+  };
+
+  #priceInput = (evt) => {
+    evt.preventDefault();
+    let priceValue = evt.target.value;
+
+    priceValue = priceValue.replace(/[^\d]/g, '');
+
+    if (priceValue.length > 1 && priceValue.startsWith('0')) {
+      priceValue = priceValue.substring(1);
+    }
+
+    if (priceValue === '') {
+      priceValue = '0';
+    }
+
+    evt.target.value = priceValue;
+
+    this.updateElement({
+      basePrice: Number(priceValue)
+    });
+  };
+
   reset(point) {
     this.updateElement(PointEditElement.PointToState(point));
   }
 
   static PointToState(point) {
-    return structuredClone(point);
+    return {
+      ...structuredClone(point),
+      basePrice: point.basePrice !== undefined ? Number(point.basePrice) : 0,
+    };
   }
 
   static StateToPoint(state) {
