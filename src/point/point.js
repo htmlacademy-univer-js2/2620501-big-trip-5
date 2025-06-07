@@ -54,7 +54,7 @@ export const EXTRA_TYPE = {
   ]
 };
 
-let pointId  = 0;
+let pointId = 0;
 const uniqueId = () => pointId ++;
 
 export const generatePoint = () => {
@@ -68,26 +68,24 @@ export const generatePoint = () => {
 
   const durationHours = getRandomInt(1, 5);
   const durationMinutes = getRandomInt(0, 59);
+  const hourFrom = getRandomInt(8, 18);
+  const minuteFrom = getRandomInt(0, 59);
 
   if (dayOffset === -1) {
-    const pastDay = getRandomInteger(1, 10);
+    const pastDay = getRandomInt(1, 10);
     dateFrom.setDate(now.getDate() - pastDay);
-    dateFrom.setUTCHours(hourOffsetFrom, minuteOffsetFrom, 0, 0);
+    dateFrom.setUTCHours(hourFrom, minuteFrom, 0, 0);
     dateTo = new Date(dateFrom);
     dateTo.setUTCHours(dateFrom.getUTCHours() + durationHours, dateFrom.getUTCMinutes() + durationMinutes, 0, 0);
-  } 
-
-  else if (dayOffset === 0) {
+  } else if (dayOffset === 0) {
     const presentDay = getRandomInt(0, 1) === 0 ? -1 : 1;
-    dateFrom.setUTCHours(now.getUTCHours() + (presentDay * getRandomInteger(0, 2)), minuteOffsetFrom, 0, 0);
+    dateFrom.setUTCHours(now.getUTCHours() + (presentDay * getRandomInt(0, 2)), minuteFrom, 0, 0);
     dateTo = new Date(dateFrom);
     dateTo.setUTCHours(dateFrom.getUTCHours() + durationHours, dateFrom.getUTCMinutes() + durationMinutes, 0, 0);
-  } 
-
-  else {
+  } else {
     const futureDay = getRandomInt(1, 10);
     dateFrom.setDate(now.getDate() + futureDay);
-    dateFrom.setUTCHours(hourOffsetFrom, minuteOffsetFrom, 0, 0);
+    dateFrom.setUTCHours(hourFrom, minuteFrom, 0, 0);
     dateTo = new Date(dateFrom);
     dateTo.setUTCHours(dateFrom.getUTCHours() + durationHours, dateFrom.getUTCMinutes() + durationMinutes, 0, 0);
   }
