@@ -1,6 +1,14 @@
 import dayjs from 'dayjs';
 import durationPlugin from 'dayjs/plugin/duration';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import {Filters} from './const.js';
+
 dayjs.extend(durationPlugin);
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
+
+const now = dayjs();
 
 export const getRandomInt = (a = 0, b = 1) => {
   const lower = Math.ceil(Math.min(a, b));
@@ -73,4 +81,11 @@ export const formatingDuration = (dateFrom, dateTo) => {
     return `${String(hours).padStart(2, '0')}H ${String(minutes).padStart(2, '0')}M`;
   }
   return `${String(minutes).padStart(2, '0')}M`;
+};
+
+export const filter = {
+  [Filters.EVERYTHING]: (points) => points,
+  [Filters.FUTURE]: (points) => points.filter((point) => dayjs(point.dateFrom).isAfter(now)),
+  [Filters.PRESENT]: (points) => points.filter((point) => dayjs(point.dateFrom).isSameOrBefore(now) && dayjs(point.dateTo).isSameOrAfter(now)),
+  [Filters.PAST]: (points) => points.filter((point) => dayjs(point.dateTo).isBefore(now)),
 };
