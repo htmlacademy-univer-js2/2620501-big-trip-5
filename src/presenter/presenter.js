@@ -171,9 +171,9 @@ export default class Presenter {
     }
 
     if (messageToShow) {
-      this.#emptyComponent = new EmptyPointsView({ customMessage: messageToShow });
+      this.#emptyComponent = new EmptyPointElement({ customMessage: messageToShow });
     } else {
-      this.#emptyComponent = new EmptyPointsView({ messageType: this.#filterModel.filter });
+      this.#emptyComponent = new EmptyPointElement({ messageType: this.#filterModel.filter });
     }
     render(this.#emptyComponent, this.#container);
   }
