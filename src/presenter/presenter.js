@@ -4,6 +4,7 @@ import EmptyPointElement from '../view/empty-points-element.js';
 import PointPresenter from './point-presenter.js';
 import {sortByDay, sortByTime, sortByPrice, filter} from '../utils.js';
 import {Updates, UserActions, Filters} from '../constants.js';
+import LoadingElement from '../view/loading-element.js';
 
 export default class Presenter {
   #container = null;
@@ -15,6 +16,8 @@ export default class Presenter {
   #pointModel = null;
   #filterModel = null;
   #newPresenter = null;
+  #loadingComponent = null;
+  #isLoad = true;
 
   constructor({container, pointModel, filterModel}) {
     this.#container = container;
@@ -93,6 +96,12 @@ export default class Presenter {
         this.#clearingBoard({resetSortType: true});
         this.#renderBoard();
         break;
+      case Updates.INIT:
+        this.#isLoad = false;
+        remove(this.#loadingComponent);
+        this.#loadingComponent = null;
+        this.#renderBoard();
+        break;
     }
   };
 
@@ -154,10 +163,18 @@ export default class Presenter {
   }
 
   #renderEmptyList() {
-    const filterType = this.#filterModel.filter;
-    this.#emptyComponent = new EmptyPointElement({
-      messageType: filterType
-    });
+    const ERROR_MESSAGE = 'Failed to load latest route information';
+    let messageToShow;
+
+    if (this.#pointModel.isLoadFailed) {
+      messageToShow = ERROR_MESSAGE;
+    }
+
+    if (messageToShow) {
+      this.#emptyComponent = new EmptyPointElement({ customMessage: messageToShow });
+    } else {
+      this.#emptyComponent = new EmptyPointElement({ messageType: this.#filterModel.filter });
+    }
     render(this.#emptyComponent, this.#container);
   }
 
@@ -169,18 +186,30 @@ export default class Presenter {
   }
 
   #renderBoard() {
-    if (!this.#sortingComponent) {
-      this.#renderSort();
+    if (this.#isLoad) {
+      if (this.#loadingComponent === null) {
+        this.#loadingComponent = new LoadingElement();
+        render(this.#loadingComponent, this.#container);
+      }
+      return;
     }
 
-    const pointsToRender = this.points;
+    if (this.#loadingComponent) {
+      remove(this.#loadingComponent);
+      this.#loadingComponent = null;
+    }
 
-    if (pointsToRender.length === 0) {
+    const points = this.points;
+
+    if (points.length === 0 && !this.#newPresenter) {
       this.#clearingPoints();
-      if(this.#tripEvents) {
+      if (this.#tripEvents) {
         remove(this.#tripEvents);
         this.#tripEvents = null;
       }
+      remove(this.#sortingComponent);
+      this.#sortingComponent = null;
+
       this.#renderEmptyList();
       return;
     }
@@ -188,6 +217,10 @@ export default class Presenter {
     if (this.#emptyComponent) {
       remove(this.#emptyComponent);
       this.#emptyComponent = null;
+    }
+
+    if(!this.#sortingComponent) {
+      this.#renderSort();
     }
 
     if (!this.#tripEvents) {

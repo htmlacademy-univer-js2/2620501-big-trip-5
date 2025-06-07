@@ -1,5 +1,5 @@
 import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
-import {TYPE} from '../point/point.js';
+import {TYPE} from '../constants.js';
 import flatpicker from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
 import dayjs from 'dayjs';
@@ -116,9 +116,21 @@ export default class PointEditElement extends AbstractStatefulView {
   #dateTo = null;
   #deleteClick = null;
 
+  static parsePoint(point, allDestinations) {
+    const state = structuredClone(point);
+
+    if (typeof state.destination === 'number' || typeof state.destination === 'string') {
+      state.destination = allDestinations.find((dest) => dest.id === state.destination) || null;
+    }
+
+    return {
+      ...state,
+    };
+  }
+
   constructor({point, formSubmit, rollUpClick, destinations, allOffersByType, deleteClick}) {
     super();
-    this.#point = point;
+    this.#point = PointEditElement.parsePoint(point, this.#destinations, this.#allOffers);
     this.#formSubmit = formSubmit;
     this.#rollUpClick = rollUpClick;
     this.#destinations = destinations;
@@ -293,7 +305,7 @@ export default class PointEditElement extends AbstractStatefulView {
   };
 
   reset(point) {
-    this.updateElement(PointEditElement.PointToState(point));
+    this.updateElement(PointEditView.parsePointToState(point, this.#destinations, this.#allOffers));
   }
 
   static PointToState(point) {

@@ -31,11 +31,19 @@ export default class PointPresenter {
   init(point) {
     this.#point = point;
 
+    const destinationObject = this.#destinations.find((dest) => dest.id === this.#point.destination);
+    const availableOffers = this.#offeringType[this.#point.type] || [];
+    const selectedOffers = availableOffers.filter((offer) => this.#point.offers.includes(offer.id));
+
     const prevElement = this.#pointElement;
     const prevEditElement = this.#pointEditElement;
 
     this.#pointElement = new PointElement({
-      point: this.#point,
+      point: {
+        ...this.#point,
+        destination: destinationObject,
+        selectedOffers: selectedOffers,
+      },
       editClick: this.#editClick,
       favoriteClick: this.#favoriteClick,
     });
@@ -106,19 +114,28 @@ export default class PointPresenter {
     this.#replaceCard();
   };
 
-  #formSubmit = () => {
-    this.#replaceForm();
+  #formSubmit = async (pointFromForm) => {
+    try {
+      await this.#dataChange(UserActions.UPDATE_POINT, pointFromForm);
+      this.#replaceForm();
   };
 
   #rollUpClick = () => {
     this.#replaceForm();
   };
 
-  #favoriteClick = () => {
-    this.#dataChange(UserActions.UPDATE_POINT, {...this.#point, isFavorite: !this.#point.isFavorite});
+  #favoriteClick = async () => {
+    try {
+      await this.#dataChange(
+        UserActions.UPDATE_POINT,
+        {...this.#point, isFavorite: !this.#point.isFavorite}
+      );
   };
 
-  #deleteClick = () => {
-    this.#dataChange(UserActions.DELETE_POINT, this.#point);
+    #deleteClick = async () => {
+    try {
+      await this.#dataChange(UserActions.DELETE_POINT, this.#point);
+    } catch (err) {
+    }
   };
 }
