@@ -118,8 +118,6 @@ export default class PointPresenter {
     try {
       await this.#dataChange(UserActions.UPDATE_POINT, pointFromForm);
       this.#replaceForm();
-    } catch (err) {
-    }
   };
 
   #rollUpClick = () => {
@@ -129,16 +127,14 @@ export default class PointPresenter {
   #favoriteClick = async () => {
     try {
       await this.#dataChange(
-        UserAction.UPDATE_POINT,
+        UserActions.UPDATE_POINT,
         {...this.#point, isFavorite: !this.#point.isFavorite}
       );
-    } catch (err) {
-    }
   };
 
-   #deleteClick = async () => {
+    #deleteClick = async () => {
     try {
-      await this.#dataChange(UserAction.DELETE_POINT, this.#point);
+      await this.#dataChange(UserActions.DELETE_POINT, this.#point);
     } catch (err) {
     }
   };
