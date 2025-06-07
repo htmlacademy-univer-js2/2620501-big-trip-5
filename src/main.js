@@ -1,4 +1,4 @@
-import Presenter from './presenter/board-presenter.js';
+import Presenter from './presenter/presenter.js';
 import FilterPresenter from './presenter/filter-presenter.js';
 import PointModel from './model/model.js';
 import FiltersModel from './model/filters-model.js';
