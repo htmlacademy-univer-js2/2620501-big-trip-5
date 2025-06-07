@@ -118,7 +118,7 @@ export default class PointPresenter {
     this.#dataChange(UserActions.UPDATE_POINT, {...this.#point, isFavorite: !this.#point.isFavorite});
   };
 
-   #deleteClick = () => {
+  #deleteClick = () => {
     this.#dataChange(UserActions.DELETE_POINT, this.#point);
   };
 }
