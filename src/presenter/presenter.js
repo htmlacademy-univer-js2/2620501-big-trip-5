@@ -45,7 +45,7 @@ export default class Presenter {
     }
   }
 
-   get destinations() {
+  get destinations() {
     return this.#pointModel.destinations;
   }
 
@@ -194,7 +194,7 @@ export default class Presenter {
       return;
     }
 
-     if (this.#loadingComponent) {
+    if (this.#loadingComponent) {
       remove(this.#loadingComponent);
       this.#loadingComponent = null;
     }
