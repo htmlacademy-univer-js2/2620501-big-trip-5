@@ -54,26 +54,43 @@ export const EXTRA_TYPE = {
   ]
 };
 
-let pointId = 0;
+let pointId  = 0;
 const uniqueId = () => pointId ++;
 
 export const generatePoint = () => {
   const type = TYPE[getRandomInt(0, TYPE.length - 1)];
   const availableOffers = EXTRA_TYPE[type] || [];
 
-  const startDate = new Date('2023-10-01T00:00:00.000Z');
-  const setDay = getRandomInt(0, 10);
-  const setHour = getRandomInt(8, 18);
-  const setMinute = getRandomInt(0, 59);
-  const dateFrom = new Date(startDate);
-
-  dateFrom.setDate(startDate.getDate() + setDay);
-  dateFrom.setUTCHours(setHour, setMinute, 0, 0);
+  const now = new Date();
+  const dayOffset = getRandomInt(-1, 1);
+  const dateFrom = new Date(now);
+  let dateTo = new Date(now);
 
   const durationHours = getRandomInt(1, 5);
   const durationMinutes = getRandomInt(0, 59);
-  const dateTo = new Date(dateFrom);
-  dateTo.setUTCHours(dateFrom.getUTCHours() + durationHours, dateFrom.getUTCMinutes() + durationMinutes, 0, 0);
+
+  if (dayOffset === -1) {
+    const pastDay = getRandomInteger(1, 10);
+    dateFrom.setDate(now.getDate() - pastDay);
+    dateFrom.setUTCHours(hourOffsetFrom, minuteOffsetFrom, 0, 0);
+    dateTo = new Date(dateFrom);
+    dateTo.setUTCHours(dateFrom.getUTCHours() + durationHours, dateFrom.getUTCMinutes() + durationMinutes, 0, 0);
+  } 
+
+  else if (dayOffset === 0) {
+    const presentDay = getRandomInt(0, 1) === 0 ? -1 : 1;
+    dateFrom.setUTCHours(now.getUTCHours() + (presentDay * getRandomInteger(0, 2)), minuteOffsetFrom, 0, 0);
+    dateTo = new Date(dateFrom);
+    dateTo.setUTCHours(dateFrom.getUTCHours() + durationHours, dateFrom.getUTCMinutes() + durationMinutes, 0, 0);
+  } 
+
+  else {
+    const futureDay = getRandomInt(1, 10);
+    dateFrom.setDate(now.getDate() + futureDay);
+    dateFrom.setUTCHours(hourOffsetFrom, minuteOffsetFrom, 0, 0);
+    dateTo = new Date(dateFrom);
+    dateTo.setUTCHours(dateFrom.getUTCHours() + durationHours, dateFrom.getUTCMinutes() + durationMinutes, 0, 0);
+  }
 
   return {
     basePrice: getRandomInt(20, 1000),
@@ -89,6 +106,6 @@ export const generatePoint = () => {
 };
 
 export const generateRoutePoint = (count) => {
-  pointId = 0;
+  pointId  = 0;
   return Array.from({length: count}, generatePoint);
 };
