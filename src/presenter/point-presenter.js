@@ -1,6 +1,7 @@
 import {render, replace, remove} from '../framework/render.js';
 import PointElement from '../view/point-element.js';
 import PointEditElement from '../view/edit-element.js';
+import {UserActions} from '../constants.js';
 
 const status = {
   DEFAULT: 'DEFAULT',
@@ -12,8 +13,8 @@ export default class PointPresenter {
   #point = null;
   #destinations = [];
   #offeringType = {};
-  #pointComponent = null;
-  #pointEditComponent = null;
+  #pointElement = null;
+  #pointEditElement = null;
   #status = status.DEFAULT;
   #dataChange = null;
   #statusChange = null;
@@ -30,43 +31,44 @@ export default class PointPresenter {
   init(point) {
     this.#point = point;
 
-    const prevComponent = this.#pointComponent;
-    const prevEditComponent = this.#pointEditComponent;
+    const prevElement = this.#pointElement;
+    const prevEditElement = this.#pointEditElement;
 
-    this.#pointComponent = new PointElement({
+    this.#pointElement = new PointElement({
       point: this.#point,
       editClick: this.#editClick,
       favoriteClick: this.#favoriteClick,
     });
 
-    this.#pointEditComponent = new PointEditElement({
+    this.#pointEditElement = new PointEditElement({
       point: this.#point,
       destinations: this.#destinations,
       offeringType: this.#offeringType,
       formSubmit: this.#formSubmit,
       rollUpClick: this.#rollUpClick,
+      deleteClick: this.#deleteClick,
     });
 
-    if (prevComponent === null || prevEditComponent === null) {
-      render(this.#pointComponent, this.#pointContainer);
+    if (prevElement === null || prevEditElement === null) {
+      render(this.#pointElement, this.#pointContainer);
       return;
     }
 
     if (this.#status === status.DEFAULT) {
-      replace(this.#pointComponent, prevComponent);
+      replace(this.#pointElement, prevElement);
     }
 
     if (this.#status === status.EDITING) {
-      replace(this.#pointEditComponent, prevEditComponent);
+      replace(this.#pointEditElement, prevEditElement);
     }
 
-    remove(prevComponent);
-    remove(prevEditComponent);
+    remove(prevElement);
+    remove(prevEditElement);
   }
 
   destroy() {
-    remove(this.#pointComponent);
-    remove(this.#pointEditComponent);
+    remove(this.#pointElement);
+    remove(this.#pointEditElement);
     document.removeEventListener('keydown', this.#escKeyDown);
   }
 
@@ -77,7 +79,7 @@ export default class PointPresenter {
   }
 
   #replaceCard = () => {
-    replace(this.#pointEditComponent, this.#pointComponent);
+    replace(this.#pointEditElement, this.#pointElement);
     document.addEventListener('keydown', this.#escKeyDown);
     this.#status = status.EDITING;
     if (this.#statusChange) {
@@ -86,8 +88,8 @@ export default class PointPresenter {
   };
 
   #replaceForm = () => {
-    if (this.#pointEditComponent && this.#pointEditComponent.element.parentElement) {
-      replace(this.#pointComponent, this.#pointEditComponent);
+    if (this.#pointEditElement && this.#pointEditElement.element.parentElement) {
+      replace(this.#pointElement, this.#pointEditElement);
     }
     document.removeEventListener('keydown', this.#escKeyDown);
     this.#status = status.DEFAULT;
@@ -113,6 +115,10 @@ export default class PointPresenter {
   };
 
   #favoriteClick = () => {
-    this.#dataChange({...this.#point, isFavorite: !this.#point.isFavorite});
+    this.#dataChange(UserActions.UPDATE_POINT, {...this.#point, isFavorite: !this.#point.isFavorite});
+  };
+
+   #deleteClick = () => {
+    this.#dataChange(UserActions.DELETE_POINT, this.#point);
   };
 }
