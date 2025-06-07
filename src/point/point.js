@@ -104,6 +104,6 @@ export const generatePoint = () => {
 };
 
 export const generateRoutePoint = (count) => {
-  pointId  = 0;
+  pointId = 0;
   return Array.from({length: count}, generatePoint);
 };
