@@ -19,3 +19,13 @@ export const UserActions = {
 };
 
 export const TYPE = ['bus', 'drive', 'taxi', 'train', 'flight', 'ship', 'check-in','restaurant', 'sightseeing'];
+
+export const BLANK = {
+  basePrice: 0,
+  dateFrom: new Date().toISOString(),
+  dateTo: new Date().toISOString(),
+  destination: null,
+  isFavorite: false,
+  offers: [],
+  type: 'taxi',
+};

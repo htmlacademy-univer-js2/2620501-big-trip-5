@@ -1,10 +1,11 @@
-import {render, remove} from '../framework/render.js';
+import {render, remove, RenderPosition} from '../framework/render.js';
 import SortView, {SortType} from '../view/sort-view.js';
 import EmptyPointElement from '../view/empty-points-element.js';
 import PointPresenter from './point-presenter.js';
 import {sortByDay, sortByTime, sortByPrice, filter} from '../utils.js';
-import {Updates, UserActions, Filters} from '../constants.js';
+import {Updates, UserActions, Filters, BLANK} from '../constants.js';
 import LoadingElement from '../view/loading-element.js';
+import PointEditElement from '../view/edit-element.js';
 
 export default class Presenter {
   #container = null;
@@ -18,13 +19,17 @@ export default class Presenter {
   #newPresenter = null;
   #loadingComponent = null;
   #isLoad = true;
+  #formComponent = null;
+  #isPointCreate = false;
+  #uiBlocker = null;
 
-  constructor({container, pointModel, filterModel}) {
+  constructor({container, pointModel, filterModel, uiBlocker}) {
     this.#container = container;
     this.#pointModel = pointModel;
     this.#filterModel = filterModel;
     this.#pointModel.addObserver(this.#modelEvents);
     this.#filterModel.addObserver(this.#modelEvents);
+    this.#uiBlocker = uiBlocker;
   }
 
   get points() {
@@ -45,7 +50,7 @@ export default class Presenter {
     }
   }
 
-  get destinations() {
+   get destinations() {
     return this.#pointModel.destinations;
   }
 
@@ -58,28 +63,127 @@ export default class Presenter {
   }
 
   createPoint() {
-    this.#filterModel.setFilter(Updates.MAJOR, Filters.EVERYTHING);
+    if (this.#isPointCreate) {
+      return;
+    }
+    this.#isPointCreate = true;
+
     this.#sortType = SortType.DAY;
-
     this.#pointPresenters.forEach((presenter) => presenter.resetView());
+    this.#filterModel.setFilter(Updates.MAJOR, Filters.EVERYTHING);
 
-    if (this.#newPresenter) {
-      this.#newPresenter.destroy();
+    this.#formComponent = new PointEditElement({
+      point: BLANK,
+      destinations: this.destinations,
+      offersByType: this.offerByType,
+      onFormSubmit: this.#newFormSubmit,
+      onRollUp: this.#newFormClose,
+      onDelete: this.#newFormClose,
+    });
+
+    const targetElement = this.#tripEvents || this.#container;
+    render(this.#formComponent, targetElement, RenderPosition.AFTERBEGIN);
+
+    document.addEventListener('keydown', this.#escKeyDownPoint);
+
+    const newButton = document.querySelector('.trip-main__event-add-btn');
+    if (newButton) {
+      newButton.disabled = true;
     }
 
   }
 
-  #viewAction = (actionType, update) => {
-    switch (actionType) {
-      case UserActions.UPDATE_POINT:
-        this.#pointModel.updatePoint(update);
-        break;
-      case UserActions.ADD_POINT:
-        this.#pointModel.addPoint(update);
-        break;
-      case UserActions.DELETE_POINT:
-        this.#pointModel.deletePoint(update);
-        break;
+  #newFormSubmit = async (pointData) => {
+    this.#formComponent.updateElement({ isDisabled: true, isSaving: true, isShake: false });
+    try {
+      await this.#viewAction(UserAction.ADD_POINT, pointData);
+    } catch (err) {
+      if (this.#formComponent && this.#formComponent.element && document.body.contains(this.#formComponent.element)) {
+        this.#formComponent.shake(() => {
+          if (this.#formComponent && this.#formComponent.element && document.body.contains(this.#formComponent.element)) {
+            this.#formComponent.updateElement({ isDisabled: false, isSaving: false });
+          }
+        });
+      }
+    }
+  };
+
+  #newFormClose = () => {
+    if (!this.#formComponent) {
+      return;
+    }
+    this.#isPointCreate = false;
+    remove(this.#formComponent);
+    this.#formComponent = null;
+    document.removeEventListener('keydown', this.#escKeyDownPoint);
+
+    const newEventButton = document.querySelector('.trip-main__event-add-btn');
+    if (newEventButton) {
+      newEventButton.disabled = false;
+    }
+
+    if (this.points.length === 0 && !this.#emptyComponent) {
+      this.#clearingPoints();
+      if(this.#tripEvents) {
+        remove(this.#tripEvents);
+        this.#tripEvents = null;
+      }
+      this.#renderEmptyList();
+    }
+  };
+
+  #escKeyDownPoint = (evt) => {
+    if (evt.key === 'Escape' || evt.key === 'Esc') {
+      evt.preventDefault();
+      this.#newFormClose();
+    }
+  };
+
+  #viewAction = async (actionType, update) => {
+    this.#uiBlocker.block();
+
+    let success = false;
+
+    try {
+      switch (actionType) {
+        case UserActions.UPDATE_POINT:
+          this.#pointPresenters.get(update.id)?.setSaving();
+          try {
+            await this.#pointModel.updatePoint(update);
+            success = true;
+          } catch (errInternal) {
+            this.#pointPresenters.get(update.id)?.setAborting();
+          }
+          break;
+        case UserActions.ADD_POINT:
+          this.#formComponent?.updateElement({ isDisabled: true, isSaving: true, isShake: false });
+          try {
+            await this.#pointModel.addPoint(update);
+            success = true;
+          } catch (errInternal) {
+            this.#formComponent?.shake(() => {
+              this.#formComponent.updateElement({ isDisabled: false, isSaving: false });
+            });
+          }
+          break;
+        case UserActions.DELETE_POINT:
+          this.#pointPresenters.get(update.id)?.setDeleting();
+          try {
+            await this.#pointModel.deletePoint(update);
+            success = true;
+          } catch (errInternal) {
+            this.#pointPresenters.get(update.id)?.setAborting();
+          }
+          break;
+      }
+    } catch (errOuter) {
+      //console.error('[BoardPresenter] #handleViewAction - Outer logic or UI method error:', errOuter);
+    } finally {
+      this.#uiBlocker.unblock();
+    }
+
+    if (!success && actionType === UserActions.UPDATE_POINT && update.isFavorite !== undefined) {
+      //проверка для обновления Favorite
     }
   };
 
@@ -105,10 +209,6 @@ export default class Presenter {
     }
   };
 
-  #dataChange = (updatedPoint) => {
-    this.#pointModel.updatePoint(updatedPoint);
-  };
-
   #sortTypeChange = (sortType) => {
     if (this.#sortType === sortType) {
       return;
@@ -127,6 +227,10 @@ export default class Presenter {
   };
 
   #clearingBoard({resetSortType = false} = {}) {
+    if (this.#formComponent) {
+      this.#newFormClose();
+    }
+
     this.#clearingPoints();
 
     if (this.#sortingComponent) {
@@ -194,7 +298,7 @@ export default class Presenter {
       return;
     }
 
-    if (this.#loadingComponent) {
+     if (this.#loadingComponent) {
       remove(this.#loadingComponent);
       this.#loadingComponent = null;
     }
