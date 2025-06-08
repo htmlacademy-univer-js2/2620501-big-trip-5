@@ -93,18 +93,20 @@ export default class PointsModel extends Observable {
     return adaptedPoint;
   }
 
-  addPoint(point) {
-    const newPointWithId = {...point, id: crypto.randomUUID()};
+  async addPoint(point) {
+    const newPointFromServer = await this.#apiTrip.addPoint(point);
+    const adaptedNewPoint = this.#pointToClient(newPointFromServer);
     this.#points = [
-      newPointWithId,
+      adaptedNewPoint,
       ...this.#points,
     ];
     this._notify(Updates.MAJOR, newPointWithId);
   }
-  deletePoint(pointToDelete) {
+  async deletePoint(pointToDelete) {
+    await this.#apiTrip.deletePoint(pointToDelete);
     const index = this.#points.findIndex((point) => point.id === pointToDelete.id);
     if (index === -1) {
-      throw new Error('Can\'t delete unexisting point');
+      throw new Error('Can\'t delete unexisting point from local model');
     }
     this.#points = [
       ...this.#points.slice(0, index),
