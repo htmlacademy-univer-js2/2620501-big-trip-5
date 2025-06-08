@@ -18,7 +18,7 @@ export default class PointPresenter {
   #status = status.DEFAULT;
   #dataChange = null;
   #statusChange = null;
-
+  _isFavoriteUpdating = false;
 
   constructor({pointContainer, destinations, offeringType, dataChange, statusChange}) {
     this.#pointContainer = pointContainer;
@@ -118,6 +118,9 @@ export default class PointPresenter {
     try {
       await this.#dataChange(UserActions.UPDATE_POINT, pointFromForm);
       this.#replaceForm();
+    } catch (err) {
+      // Обработка ошибки
+    }
   };
 
   #rollUpClick = () => {
@@ -125,17 +128,73 @@ export default class PointPresenter {
   };
 
   #favoriteClick = async () => {
+    if (this._isFavoriteUpdating) {
+      return;
+    }
+    this._isFavoriteUpdating = true;
+
+    const originalIsFavorite = this.#point.isFavorite;
+
     try {
       await this.#dataChange(
         UserActions.UPDATE_POINT,
         {...this.#point, isFavorite: !this.#point.isFavorite}
       );
+    } catch (err) {
+      if (this.#pointElement && typeof this.#pointElement.updateElement === 'function') {
+        this.#pointElement.updateElement({
+          isFavorite: originalIsFavorite,
+          isFavoriteProcessing: false
+        });
+      }
+    } finally {
+      this._isFavoriteUpdating = false;
+    }
   };
 
-    #deleteClick = async () => {
+  setSaving() {
+    if (this.#status === status.EDITING && this.#pointEditElement) {
+      this.#pointEditElement.updateElement({
+        isDisabled: true,
+        isSaving: true,
+        isShake: false,
+      });
+    }
+  }
+
+  setDeleting() {
+    if (this.#status === status.EDITING && this.#pointEditElement) {
+      this.#pointEditElement.updateElement({
+        isDisabled: true,
+        isDeleting: true,
+        isShake: false,
+      });
+    }
+  }
+
+  setAborting() {
+    if (this.#status === status.EDITING && this.#pointEditElement) {
+      const resetFormState = () => {
+        if (this.#pointEditElement && this.#pointEditElement.element && document.body.contains(this.#pointEditElement.element)) {
+          this.#pointEditElement.updateElement({
+            isDisabled: false,
+            isSaving: false,
+            isDeleting: false,
+            isShake: false,
+          });
+        }
+      };
+      if (this.#pointEditElement.element && document.body.contains(this.#pointEditElement.element)) {
+        this.#pointEditElement.shake(resetFormState);
+      }
+    }
+  }
+
+  #deleteClick = async () => {
     try {
       await this.#dataChange(UserActions.DELETE_POINT, this.#point);
     } catch (err) {
+      //оработка ошибки
     }
   };
 }
