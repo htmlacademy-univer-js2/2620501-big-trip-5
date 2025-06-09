@@ -1,13 +1,6 @@
 import Observable from '../framework/observable.js';
 import {Updates} from '../constants.js';
 
-const POINT_CONSTANTS = {
-  base_price: 'basePrice',
-  date_from: 'dateFrom',
-  date_to: 'dateTo',
-  is_favorite: 'isFavorite'
-};
-
 export default class Model extends Observable {
   #points = [];
   #destinations = [];
@@ -106,11 +99,19 @@ export default class Model extends Observable {
   }
 
   #adaptPoint(point) {
-    const adaptedPoint = {...point};
-    Object.entries(POINT_CONSTANTS).forEach(([key, value]) => {
-      adaptedPoint[value] = point[key];
-      delete adaptedPoint[key];
-    });
+    const adaptedPoint = {
+      ...point,
+      basePrice: point.base_price,
+      dateFrom: point.date_from,
+      dateTo: point.date_to,
+      isFavorite: point.is_favorite,
+    };
+
+    delete adaptedPoint.base_price;
+    delete adaptedPoint.date_from;
+    delete adaptedPoint.date_to;
+    delete adaptedPoint.is_favorite;
+
     return adaptedPoint;
   }
 }
