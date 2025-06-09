@@ -16,7 +16,7 @@ const emptyTemplate = (message) => (
 );
 
 export default class EmptyElement extends AbstractView {
- #message = '';
+  #message = '';
 
   constructor({ messageType = DEFAULT_MESSAGE_TYPE, customMessage = null } = {}) {
     super();
@@ -24,6 +24,6 @@ export default class EmptyElement extends AbstractView {
   }
 
   get template() {
-    return createEmptyListTemplate(this.#message);
+    return emptyTemplate(this.#message);
   }
 }
