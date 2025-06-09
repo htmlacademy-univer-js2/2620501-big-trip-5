@@ -42,7 +42,7 @@ export default class PointPresenter {
     const prevEditView = this.#editElement;
 
     this.#pointElement = new PointElement({
-      point: { ...point, destination, selectedOffers: offers },
+      point: { ...point, destination, selectedOffers: selectedPointOfferObjects },
       onEditClick: this.#handleEditClick,
       onFavoriteClick: this.#handleFavoriteClick,
     });
