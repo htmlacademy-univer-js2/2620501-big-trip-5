@@ -76,7 +76,7 @@ export default class Model extends Observable {
     }
 
     this.#points = [...this.#points.slice(0, index), adaptUpdatedPoint, ...this.#points.slice(index + 1),];
-    this._notify(UpdateType.PATCH, adaptUpdatedPoint);
+    this._notify(Updates.PATCH, adaptUpdatedPoint);
     return adaptUpdatedPoint;
   }
 
@@ -88,7 +88,7 @@ export default class Model extends Observable {
       throw new Error('Can\'t delete unexisting point from local model');
     }
     this.#points = [...this.#points.slice(0, index), ...this.#points.slice(index + 1),];
-    this._notify(UpdateType.MAJOR, pointToDelete);
+    this._notify(Updates.MAJOR, pointToDelete);
   }
 
   #adaptPoint(point) {
