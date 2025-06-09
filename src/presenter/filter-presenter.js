@@ -1,30 +1,29 @@
 import {render, replace, remove} from '../framework/render.js';
 import FilterElement from '../view/filter-element.js';
-import {filter} from '../utils';
 import {Filters, Updates} from '../constants.js';
+import {filterPointsByTime} from '../utils';
 
 export default class FilterPresenter {
   #container = null;
-  #model = null;
-  #pointModel = null;
-  #component = null;
+  #filtersModel = null;
+  #pointsModel = null;
+  #filtersView = null;
 
-  constructor({container, model, pointModel}) {
-    this.#container = container;
-    this.#model = model;
-    this.#pointModel = pointModel;
+  constructor({filterContainer, filtersModel, pointsModel}) {
+    this.#container = filterContainer;
+    this.#filtersModel = filtersModel;
+    this.#pointsModel = pointsModel;
 
-    this.#pointModel.addObserver(this.#modelEvent);
-    this.#model.addObserver(this.#modelEvent);
+    this.#pointsModel.addObserver(this.#handleModelEvent);
+    this.#filtersModel.addObserver(this.#handleModelEvent);
   }
 
   get filters() {
-    const points = this.#pointModel.points;
     return Object.values(Filters).map((type) => {
-      const filteredPoints = filter[type](points);
+      const filteredPoints = filterPointsByTime[type](this.#pointsModel.points);
       return {
         type,
-        name: type.charAt(0).toUpperCase() + type.slice(1),
+        name: this.#getFilterName(type),
         count: filteredPoints.length,
         isDisabled: type !== Filters.EVERYTHING && filteredPoints.length === 0,
       };
@@ -32,31 +31,36 @@ export default class FilterPresenter {
   }
 
   init() {
-    const currentFilters = this.filters;
-    const previousFilters = this.#component;
+    const filters = this.filters;
+    const prevFilterComponent = this.#filtersView ;
 
-    this.#component = new FilterElement({
-      filters: currentFilters,
-      currentFilterType: this.#model.filter,
-      onFilterTypeChange: this.#filterTypeChange
+    this.#filtersView  = new FilterElement({
+      filters,
+      currentFilterType: this.#filtersModel.filter,
+      onFilterTypeChange: this.#handleFilterChange
     });
 
-    if (previousFilters === null) {
-      render(this.#component, this.#container);
+    if (prevFilterComponent === null) {
+      render(this.#filtersView , this.#container);
       return;
     }
-    replace(this.#component, previousFilters);
-    remove(previousFilters);
+    replace(this.#filtersView , prevFilterComponent);
+    remove(prevFilterComponent);
   }
 
-  #filterTypeChange = (filterType) => {
-    if (this.#model.filter === filterType) {
-      return;
-    }
-    this.#model.setFilter(Updates.MAJOR, filterType);
+  #getFilterName = (filterType) => {
+    return filterType.charAt(0).toUpperCase() + filterType.slice(1).toLowerCase();
   };
 
-  #modelEvent = () => {
+  #handleFilterChange = (filterType) => {
+    if (this.#filtersModel.filter === filterType) {
+      return;
+    }
+    this.#filtersModel.setFilter(Updates.MAJOR, filterType);
+  };
+
+  #handleModelEvent = () => {
     this.init();
   };
 }
+
