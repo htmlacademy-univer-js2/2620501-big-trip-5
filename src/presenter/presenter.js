@@ -207,7 +207,7 @@ export default class Presenter {
     this.#renderPointsList();
   }
 
-   #closeNewPointForm = () => {
+  #closeNewPointForm = () => {
     if (!this.#newPointView) {
       return;
     }
