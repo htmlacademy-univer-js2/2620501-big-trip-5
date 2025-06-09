@@ -1,160 +1,87 @@
 import {render, replace, remove} from '../framework/render.js';
 import PointElement from '../view/point-element.js';
-import PointEditElement from '../view/edit-element.js';
-import {UserActions} from '../constants.js';
+import EditElement from '../view/edit-element.js';
+import {Actions} from '../constants.js';
 
-const status = {
+const Status = {
   DEFAULT: 'DEFAULT',
   EDITING: 'EDITING',
 };
 
 export default class PointPresenter {
-  #pointContainer = null;
+  #container = null;
   #point = null;
   #destinations = [];
-  #offeringType = {};
+  #offersByType = {};
   #pointElement = null;
-  #pointEditElement = null;
-  #status = status.DEFAULT;
-  #dataChange = null;
-  #statusChange = null;
-  _isFavoriteUpdating = false;
+  #editElement = null;
 
-  constructor({pointContainer, destinations, offeringType, dataChange, statusChange}) {
-    this.#pointContainer = pointContainer;
+  #currentStatus = Status.DEFAULT;
+  #handleDataChange = null;
+  #handleModeChange = null;
+
+  #isFavoriteUpdating = false;
+
+  constructor({pointListContainer, destinations, offersByType, onDataChangeCallback, onModeChangeCallback}) {
+    this.#container = pointListContainer;
     this.#destinations = destinations;
-    this.#offeringType = offeringType;
-    this.#dataChange = dataChange;
-    this.#statusChange = statusChange;
+    this.#offersByType = offersByType;
+    this.#handleDataChange = onDataChangeCallback;
+    this.#handleModeChange = onModeChangeCallback;
   }
 
   init(point) {
     this.#point = point;
 
-    const destinationObject = this.#destinations.find((dest) => dest.id === this.#point.destination);
-    const availableOffers = this.#offeringType[this.#point.type] || [];
-    const selectedOffers = availableOffers.filter((offer) => this.#point.offers.includes(offer.id));
+    const destination = this.#destinations.find((dest) => dest.id === this.#point.destination);
+    const offers = this.#offersByType[this.#point.type] || [];
 
-    const prevElement = this.#pointElement;
-    const prevEditElement = this.#pointEditElement;
+    const selectedPointOfferObjects = offers.filter((offer) => this.#point.offers.includes(offer.id));
+
+    const prevPointView = this.#pointElement;
+    const prevEditView = this.#editElement;
 
     this.#pointElement = new PointElement({
-      point: {
-        ...this.#point,
-        destination: destinationObject,
-        selectedOffers: selectedOffers,
-      },
-      editClick: this.#editClick,
-      favoriteClick: this.#favoriteClick,
+      point: { ...point, destination, selectedOffers: offers },
+      onEditClick: this.#handleEditClick,
+      onFavoriteClick: this.#handleFavoriteClick,
     });
 
-    this.#pointEditElement = new PointEditElement({
+    this.#editElement = new EditElement({
       point: this.#point,
       destinations: this.#destinations,
-      offeringType: this.#offeringType,
-      formSubmit: this.#formSubmit,
-      rollUpClick: this.#rollUpClick,
-      deleteClick: this.#deleteClick,
+      offersByType: this.#offersByType,
+      onFormSubmit: this.#handleFormSubmit,
+      onRollUpClick: this.#handleRollUpClick,
+      onDeleteClick: this.#handleDeleteClick,
     });
 
-    if (prevElement === null || prevEditElement === null) {
-      render(this.#pointElement, this.#pointContainer);
+    if (prevPointView === null || prevEditView === null) {
+      render(this.#pointElement, this.#container);
       return;
     }
 
-    if (this.#status === status.DEFAULT) {
-      replace(this.#pointElement, prevElement);
+    if (this.#currentStatus === Status.DEFAULT) {
+      replace(this.#pointElement, prevPointView);
     }
 
-    if (this.#status === status.EDITING) {
-      replace(this.#pointEditElement, prevEditElement);
+    if (this.#currentStatus === Status.EDITING) {
+      replace(this.#editElement, prevEditView);
     }
 
-    remove(prevElement);
-    remove(prevEditElement);
+    remove(prevPointView);
+    remove(prevEditView);
   }
 
-  destroy() {
-    remove(this.#pointElement);
-    remove(this.#pointEditElement);
-    document.removeEventListener('keydown', this.#escKeyDown);
-  }
-
-  reset() {
-    if (this.#status !== status.DEFAULT) {
-      this.#replaceForm();
+  resetView() {
+    if (this.#currentStatus !== Status.DEFAULT) {
+      this.#switchToViewMode();
     }
   }
-
-  #replaceCard = () => {
-    replace(this.#pointEditElement, this.#pointElement);
-    document.addEventListener('keydown', this.#escKeyDown);
-    this.#status = status.EDITING;
-    if (this.#statusChange) {
-      this.#statusChange(this);
-    }
-  };
-
-  #replaceForm = () => {
-    if (this.#pointEditElement && this.#pointEditElement.element.parentElement) {
-      replace(this.#pointElement, this.#pointEditElement);
-    }
-    document.removeEventListener('keydown', this.#escKeyDown);
-    this.#status = status.DEFAULT;
-  };
-
-  #escKeyDown = (evt) => {
-    if (evt.key === 'Escape' || evt.key === 'Esc') {
-      evt.preventDefault();
-      this.#replaceForm();
-    }
-  };
-
-  #editClick = () => {
-    this.#replaceCard();
-  };
-
-  #formSubmit = async (pointFromForm) => {
-    try {
-      await this.#dataChange(UserActions.UPDATE_POINT, pointFromForm);
-      this.#replaceForm();
-    } catch (err) {
-      // Обработка ошибки
-    }
-  };
-
-  #rollUpClick = () => {
-    this.#replaceForm();
-  };
-
-  #favoriteClick = async () => {
-    if (this._isFavoriteUpdating) {
-      return;
-    }
-    this._isFavoriteUpdating = true;
-
-    const originalIsFavorite = this.#point.isFavorite;
-
-    try {
-      await this.#dataChange(
-        UserActions.UPDATE_POINT,
-        {...this.#point, isFavorite: !this.#point.isFavorite}
-      );
-    } catch (err) {
-      if (this.#pointElement && typeof this.#pointElement.updateElement === 'function') {
-        this.#pointElement.updateElement({
-          isFavorite: originalIsFavorite,
-          isFavoriteProcessing: false
-        });
-      }
-    } finally {
-      this._isFavoriteUpdating = false;
-    }
-  };
 
   setSaving() {
-    if (this.#status === status.EDITING && this.#pointEditElement) {
-      this.#pointEditElement.updateElement({
+    if (this.#currentStatus === Status.EDITING && this.#editElement) {
+      this.#editElement.updateElement({
         isDisabled: true,
         isSaving: true,
         isShake: false,
@@ -163,8 +90,8 @@ export default class PointPresenter {
   }
 
   setDeleting() {
-    if (this.#status === status.EDITING && this.#pointEditElement) {
-      this.#pointEditElement.updateElement({
+    if (this.#currentStatus === Status.EDITING && this.#editElement) {
+      this.#editElement.updateElement({
         isDisabled: true,
         isDeleting: true,
         isShake: false,
@@ -173,10 +100,10 @@ export default class PointPresenter {
   }
 
   setAborting() {
-    if (this.#status === status.EDITING && this.#pointEditElement) {
+    if (this.#currentStatus === Status.EDITING && this.#editElement) {
       const resetFormState = () => {
-        if (this.#pointEditElement && this.#pointEditElement.element && document.body.contains(this.#pointEditElement.element)) {
-          this.#pointEditElement.updateElement({
+        if (this.#editElement && this.#editElement.element && document.body.contains(this.#editElement.element)) {
+          this.#editElement.updateElement({
             isDisabled: false,
             isSaving: false,
             isDeleting: false,
@@ -184,17 +111,98 @@ export default class PointPresenter {
           });
         }
       };
-      if (this.#pointEditElement.element && document.body.contains(this.#pointEditElement.element)) {
-        this.#pointEditElement.shake(resetFormState);
+      if (this.#editElement.element && document.body.contains(this.#editElement.element)) {
+        this.#editElement.shake(resetFormState);
       }
     }
   }
 
-  #deleteClick = async () => {
+  destroy() {
+    remove(this.#pointElement);
+    remove(this.#editElement);
+    document.removeEventListener('keydown', this.#handleEscKey);
+  }
+
+  #switchToEditMode = () => {
+    replace(this.#editElement, this.#pointElement);
+    document.addEventListener('keydown', this.#handleEscKey);
+    this.#currentStatus = Status.EDITING;
+    if (this.#handleModeChange) {
+      this.#handleModeChange(this);
+    }
+  };
+
+  #switchToViewMode = () => {
+    if (this.#editElement) {
+      this.#editElement.reset(this.#point);
+    }
+
+    if (this.#editElement && this.#editElement.element.parentElement) {
+      replace(this.#pointElement, this.#editElement);
+    }
+    document.removeEventListener('keydown', this.#handleEscKey);
+    this.#currentStatus = Status.DEFAULT;
+  };
+
+  #handleEscKey = (evt) => {
+    if (evt.key === 'Escape' || evt.key === 'Esc') {
+      evt.preventDefault();
+      this.#switchToViewMode();
+    }
+  };
+
+  #handleEditClick = () => {
+    this.#switchToEditMode();
+  };
+
+  #handleFormSubmit = async (pointFromForm) => {
     try {
-      await this.#dataChange(UserActions.DELETE_POINT, this.#point);
+      await this.#handleDataChange(Actions.UPDATE_POINT, pointFromForm);
+      this.#switchToViewMode();
     } catch (err) {
-      //оработка ошибки
+      // Форма остается открытой при ошибке
+    }
+  };
+
+  #handleDeleteClick = async () => {
+    try {
+      await this.#handleDataChange(Actions.DELETE_POINT, this.#point);
+    } catch (err) {
+      // Форма остается открытой при ошибке
+    }
+  };
+
+  #handleRollUpClick = () => {
+    this.#switchToViewMode();
+  };
+
+  #handleFavoriteClick = async () => {
+    if (this.#isFavoriteUpdating) {
+      return;
+    }
+    this.#isFavoriteUpdating = true;
+
+    const originalValue = this.#point.isFavorite;
+
+    if (this.#pointElement && typeof this.#pointElement.updateElement === 'function') {
+      this.#pointElement.updateElement({ isFavoriteProcessing: true });
+    }
+
+    try {
+      await this.#handleDataChange(
+        Actions.UPDATE_POINT,
+        {...this.#point, isFavorite: !this.#point.isFavorite}
+      );
+    } catch (err) {
+      if (this.#pointElement && typeof this.#pointElement.updateElement === 'function') {
+        this.#pointElement.updateElement({
+          isFavorite: originalValue,
+          isFavoriteProcessing: false
+        });
+        this.#pointElement.shake();
+      }
+    } finally {
+      this.#isFavoriteUpdating = false;
     }
   };
 }
