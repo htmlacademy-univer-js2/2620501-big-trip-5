@@ -5,74 +5,71 @@ import dayjs from 'dayjs';
 
 export default class TripPresenter {
   #container = null;
-  #pointModel = null;
-  #component = null;
+  #pointsModel = null;
+  #tripElement = null;
 
-  constructor({container, pointModel}) {
-    this.#container = container;
-    this.#pointModel = pointModel;
+  constructor({tripMainContainer, pointsModel}) {
+    this.#container = tripMainContainer;
+    this.#pointsModel = pointsModel;
   }
 
   get points() {
-    return this.#pointModel.points;
+    return this.#pointsModel.points;
   }
 
   get destinations() {
-    return this.#pointModel.destinations;
+    return this.#pointsModel.destinations;
   }
 
   get offersData() {
-    return this.#pointModel.rawOffers;
+    return this.#pointsModel.rawOffers;
   }
 
   init() {
-    if (this.#pointModel) {
-      this.#pointModel.addObserver(this.#eventModel);
-      this.#render();
+    if (this.#pointsModel) {
+      this.#pointsModel.addObserver(this.#handleModelEvent);
+      this.#renderElement();
     }
   }
 
-  #getTotalPrice(points, offersData) {
-    let totalPrice = 0;
-    if (!points || points.length === 0 || !offersData) {
-      return 0;
-    }
-    const offerType = {};
+  #getTotalCost(points, offersData) {
+    let totalCost = 0;
+    const offersByType = {};
     offersData.forEach((offerType) => {
-      offerType[offerType.type] = offerType.offers;
+      offersByType[offerType.type] = offerType.offers;
     });
 
     points.forEach((point) => {
-      totalPrice += Number(point.basePrice) || 0;
-      const typeOfOffer = offerType[point.type] || [];
+      totalCost += Number(point.basePrice) || 0;
+      const typeOffers = offersByType[point.type] || [];
       if (point.offers && Array.isArray(point.offers)) {
         point.offers.forEach((selectedOfferId) => {
-          const offerDetails = typeOfOffer.find((o) => o.id === selectedOfferId);
+          const offerDetails = typeOffers.find((o) => o.id === selectedOfferId);
           if (offerDetails) {
-            totalPrice += Number(offerDetails.price) || 0;
+            totalCost += Number(offerDetails.price) || 0;
           }
         });
       }
     });
-    return totalPrice;
+    return totalCost;
   }
 
-  #generateTitle(points, destinations) {
+  #getTitle(points, destinations) {
     if (!points || points.length === 0 || !destinations || destinations.length === 0) {
       return '';
     }
-    const sortPoints = [...points].sort(sortByDay);
+    const sortedPoints = [...points].sort(sortByDay);
 
-    const uniqueDestination = [];
-    const seenDestination = new Set();
-    for (const point of sortPoints) {
-      if (point.destination && !seenDestination.has(point.destination)) {
-        uniqueDestination.push(point.destination);
-        seenDestination.add(point.destination);
+    const uniqueDestinationIdsInOrder = [];
+    const seenDestinationIds = new Set();
+    for (const point of sortedPoints) {
+      if (point.destination && !seenDestinationIds.has(point.destination)) {
+        uniqueDestinationIdsInOrder.push(point.destination);
+        seenDestinationIds.add(point.destination);
       }
     }
 
-    const cityNames = uniqueDestination
+    const cityNames = uniqueDestinationIdsInOrder
       .map((id) => destinations.find((d) => d.id === id)?.name)
       .filter((name) => name);
 
@@ -89,52 +86,52 @@ export default class TripPresenter {
     if (!points || points.length === 0) {
       return '';
     }
-    const sortPoints = [...points].sort(sortByDay);
-    const dateFrom = dayjs(sortPoints[0].dateFrom);
-    const dateTo = dayjs(sortPoints[sortPoints.length - 1].dateTo);
+    const sortedPoints = [...points].sort(sortByDay);
+    const startDate = dayjs(sortedPoints[0].dateFrom);
+    const endDate = dayjs(sortedPoints[sortedPoints.length - 1].dateTo);
 
-    if (!dateFrom.isValid() || !dateTo.isValid()) {
+    if (!startDate.isValid() || !endDate.isValid()) {
       return '';
     }
 
-    if (dateFrom.month() === dateTo.month()) {
-      return `${dateFrom.format('DD MMM')} — ${dateTo.format('DD')}`;
+    if (startDate.month() === endDate.month()) {
+      return `${startDate.format('DD MMM')} — ${endDate.format('DD')}`;
     }
-    return `${dateFrom.format('DD MMM')} — ${dateTo.format('DD MMM')}`;
+    return `${startDate.format('DD MMM')} — ${endDate.format('DD MMM')}`;
   }
 
-  #render() {
+  #renderElement() {
     const points = this.points;
     const destinations = this.destinations;
     const offersData = this.offersData;
 
     if (points.length === 0 || !destinations || destinations.length === 0) {
-      if (this.#component) {
-        remove(this.#component);
-        this.#component = null;
+      if (this.#tripElement) {
+        remove(this.#tripElement);
+        this.#tripElement = null;
       }
       return;
     }
 
-    const title = this.#generateTitle(points, destinations);
-    const date = this.#getDates(points);
-    const totalPrice = this.#getTotalPrice(points, offersData);
+    const title = this.#getTitle(points, destinations);
+    const dates = this.#getDates(points);
+    const totalCost = this.#getTotalCost(points, offersData);
 
-    const prevComponent = this.#component;
-    this.#component = new TripElement({title, dates: date, totalCost: totalPrice});
+    const prevTripInfoComponent = this.#tripElement;
+    this.#tripElement = new TripElement({title, dates, totalCost});
 
-    if (prevComponent === null) {
-      render(this.#component, this.#container, RenderPosition.AFTERBEGIN);
+    if (prevTripInfoComponent === null) {
+      render(this.#tripElement, this.#container, RenderPosition.AFTERBEGIN);
     } else {
-      replace(this.#component, prevComponent);
-      remove(prevComponent);
+      replace(this.#tripElement, prevTripInfoComponent);
+      remove(prevTripInfoComponent);
     }
   }
 
-  #eventModel = () => {
-    if (!this.#pointModel) {
+  #handleModelEvent = () => {
+    if (!this.#pointsModel) {
       return;
     }
-    this.#render();
+    this.#renderElement();
   };
 }

@@ -12,20 +12,20 @@ export const Updates = {
   INIT: 'INIT',
 };
 
-export const UserActions = {
+export const Actions = {
   UPDATE_POINT: 'UPDATE_POINT',
   ADD_POINT: 'ADD_POINT',
   DELETE_POINT: 'DELETE_POINT',
 };
 
-export const TYPE = ['bus', 'drive', 'taxi', 'train', 'flight', 'ship', 'check-in','restaurant', 'sightseeing'];
+export const TYPE = ['taxi', 'bus', 'train', 'ship', 'drive', 'flight', 'check-in', 'sightseeing', 'restaurant'];
 
 export const BLANK = {
   basePrice: 0,
-  dateFrom: new Date().toISOString(),
-  dateTo: new Date().toISOString(),
+  dateFrom: null,
+  dateTo: null,
   destination: null,
   isFavorite: false,
   offers: [],
-  type: 'taxi',
+  type: 'flight',
 };

@@ -1,6 +1,6 @@
 import ApiService from './framework/api-service';
 
-const action = {
+const Action = {
   GET: 'GET',
   PUT: 'PUT',
   POST: 'POST',
@@ -26,7 +26,7 @@ export default class TripApi extends ApiService {
   async updatePoint(point) {
     return this._load({
       url: `points/${point.id}`,
-      method: action.PUT,
+      method: Action.PUT,
       body: JSON.stringify(this.#adaptPoint(point)),
       headers: new Headers({'Content-Type': 'application/json'}),
     })
@@ -36,7 +36,7 @@ export default class TripApi extends ApiService {
   async addPoint(point) {
     return this._load({
       url: 'points',
-      method: Method.POST,
+      method: Action.POST,
       body: JSON.stringify(this.#adaptPoint(point)),
       headers: new Headers({'Content-Type': 'application/json'}),
     })
@@ -46,31 +46,33 @@ export default class TripApi extends ApiService {
   async deletePoint(point) {
     return this._load({
       url: `points/${point.id}`,
-      method: Method.DELETE,
+      method: Action.DELETE,
     });
   }
 
   #adaptPoint(point) {
-    const adaptPoint = {
+    const adaptedPoint = {
       ...point,
       'base_price': Number(point.basePrice),
       'date_from': point.dateFrom,
       'date_to': point.dateTo,
       'is_favorite': point.isFavorite,
-      destination: (typeof point.destination === 'object' && point.destination !== null) ? point.destination.id : point.destination,
+      destination: (point.destination && typeof point.destination === 'object' && point.destination.id !== undefined)
+        ? point.destination.id
+        : point.destination,
       offers: point.offers,
     };
 
-    delete adaptPoint.basePrice;
-    delete adaptPoint.dateFrom;
-    delete adaptPoint.dateTo;
-    delete adaptPoint.isFavorite;
-    delete adaptPoint.selectedOffers;
+    delete adaptedPoint.basePrice;
+    delete adaptedPoint.dateFrom;
+    delete adaptedPoint.dateTo;
+    delete adaptedPoint.isFavorite;
+    delete adaptedPoint.selectedOffers;
 
     if (point.id === undefined || point.id === null || String(point.id).startsWith('local_')) {
-      delete adaptPoint.id;
+      delete adaptedPoint.id;
     }
 
-    return adaptPoint;
+    return adaptedPoint;
   }
 }
