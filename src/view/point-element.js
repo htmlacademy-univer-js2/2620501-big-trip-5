@@ -1,40 +1,39 @@
 import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
-import {formatingMonthDay, formatingHourMinute, formatingDuration} from '../utils.js';
+import {formatMonthDay, formatHourMinute, formatDuration, encodeHtml} from '../utils.js';
 
 const pointTemplate = (point) => {
   const destinationName = point.destination?.name || 'Unknown destination';
   const selectedOffers = point.selectedOffers || [];
-
-  const mainDate = formatingMonthDay(point.dateFrom);
-  const timeFrom = formatingHourMinute(point.dateFrom);
-  const timeTo = formatingHourMinute(point.dateTo);
-  const duration = formatingDuration(point.dateFrom, point.dateTo);
+  const headerDate = formatMonthDay(point.dateFrom);
+  const timeFrom = formatHourMinute(point.dateFrom);
+  const timeTo = formatHourMinute(point.dateTo);
+  const duration = formatDuration(point.dateFrom, point.dateTo);
 
   return `<li class="trip-events__item">
     <div class="event">
-      <time class="event__date" datetime="${point.dateFrom}">${mainDate}</time>
+      <time class="event__date" datetime="${encodeHtml(point.dateFrom)}">${encodeHtml(headerDate)}</time>
       <div class="event__type">
-        <img class="event__type-icon" width="42" height="42" src="img/icons/${point.type}.png" alt="Event type icon">
+        <img class="event__type-icon" width="42" height="42" src="img/icons/${encodeHtml(point.type)}.png" alt="Event type icon">
       </div>
-      <h3 class="event__title">${point.type} ${destinationName}</h3>
+      <h3 class="event__title">${encodeHtml(point.type)} ${encodeHtml(destinationName)}</h3>
       <div class="event__schedule">
         <p class="event__time">
-          <time class="event__start-time" datetime="${point.dateFrom}">${timeFrom}</time>
+          <time class="event__start-time" datetime="${encodeHtml(point.dateFrom)}">${encodeHtml(timeFrom)}</time>
           —
-          <time class="event__end-time" datetime="${point.dateTo}">${timeTo}</time>
+          <time class="event__end-time" datetime="${encodeHtml(point.dateTo)}">${encodeHtml(timeTo)}</time>
         </p>
-        <p class="event__duration">${duration}</p>
+        <p class="event__duration">${encodeHtml(duration)}</p>
       </div>
       <p class="event__price">
-        &euro;&nbsp;<span class="event__price-value">${point.basePrice}</span>
+        &euro;&nbsp;<span class="event__price-value">${encodeHtml(point.basePrice)}</span>
       </p>
       <h4 class="visually-hidden">Offers:</h4>
       <ul class="event__selected-offers">
         ${selectedOffers.map((offer) => `
           <li class="event__offer">
-            <span class="event__offer-title">${offer.title}</span>
+            <span class="event__offer-title">${encodeHtml(offer.title)}</span>
             +€
-            <span class="event__offer-price">${offer.price}</span>
+            <span class="event__offer-price">${encodeHtml(offer.price)}</span>
           </li>
         `).join('')}
       </ul>
@@ -52,17 +51,16 @@ const pointTemplate = (point) => {
 };
 
 export default class PointElement extends AbstractStatefulView {
-  #point = null;
-  #editClick = null;
-  #favoriteClick = null;
+  #onEditClickCallback = null;
+  #onFavoriteClickCallback = null;
 
-  constructor({point, editClick, favoriteClick}) {
+  constructor({point, onEditClick, onFavoriteClick}) {
     super();
-    this.#point = PointElement.pointToState(point);
-    this.#editClick = editClick;
-    this.#favoriteClick = favoriteClick;
-    this._setState(this.#point);
-    this._restoreHandlers();
+    this._state = PointElement.parsePointToState(point);
+    this.#onEditClickCallback = onEditClick;
+    this.#onFavoriteClickCallback = onFavoriteClick;
+
+    this.#setHandlers();
   }
 
   get template() {
@@ -70,13 +68,37 @@ export default class PointElement extends AbstractStatefulView {
   }
 
   _restoreHandlers() {
-    this.element.querySelector('.event__rollup-btn')
-      .addEventListener('click', this.#editClick);
-    this.element.querySelector('.event__favorite-btn')
-      .addEventListener('click', this.#favoriteClick);
+    this.#setHandlers();
   }
 
-  static pointToState(point) {
+  #editButton = (evt) => {
+    evt.preventDefault();
+    if (this.#onEditClickCallback) {
+      this.#onEditClickCallback();
+    }
+  };
+
+  #favoriteButton = (evt) => {
+    evt.preventDefault();
+
+    if (this._state.isFavoriteProcessing) {
+      return;
+    }
+    this.updateElement({ isFavoriteProcessing: true });
+
+    if (this.#onFavoriteClickCallback) {
+      this.#onFavoriteClickCallback();
+    }
+  };
+
+  #setHandlers() {
+    this.element.querySelector('.event__rollup-btn')
+      .addEventListener('click', this.#editButton);
+    this.element.querySelector('.event__favorite-btn')
+      .addEventListener('click', this.#favoriteButton);
+  }
+
+  static parsePointToState(point) {
     return {
       ...point,
       isFavoriteProcessing: false,
