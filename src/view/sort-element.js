@@ -54,12 +54,14 @@ export default class SortElement extends AbstractView {
 
   #onSortClick = (evt) => {
     const sortItem = evt.target.closest('[data-sort-type]');
-    
-    if (!sortItem) return;
-    
+
+    if (!sortItem){
+      return;
+    }
+
     const sortType = sortItem.dataset.sortType;
     const input = this.element.querySelector(`#sort-${sortType}`);
-    
+
     if (input?.disabled) {
       evt.preventDefault();
       return;
