@@ -19,11 +19,12 @@ export default class FilterPresenter {
   }
 
   get filters() {
+    const points = this.#pointsModel.points;
     return Object.values(Filters).map((type) => {
       const filteredPoints = filterPointsByTime[type](this.#pointsModel.points);
       return {
         type,
-        name: this.#getFilterName(type),
+        name: type.charAt(0).toUpperCase() + type.slice(1),
         count: filteredPoints.length,
         isDisabled: type !== Filters.EVERYTHING && filteredPoints.length === 0,
       };
@@ -47,10 +48,6 @@ export default class FilterPresenter {
     replace(this.#filtersView , prevFilterComponent);
     remove(prevFilterComponent);
   }
-
-  #getFilterName = (filterType) => {
-    return filterType.charAt(0).toUpperCase() + filterType.slice(1).toLowerCase();
-  };
 
   #handleFilterChange = (filterType) => {
     if (this.#filtersModel.filter === filterType) {
