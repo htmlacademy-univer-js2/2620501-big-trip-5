@@ -19,7 +19,6 @@ export default class FilterPresenter {
   }
 
   get filters() {
-    const points = this.#pointsModel.points;
     return Object.values(Filters).map((type) => {
       const filteredPoints = filterPointsByTime[type](this.#pointsModel.points);
       return {
