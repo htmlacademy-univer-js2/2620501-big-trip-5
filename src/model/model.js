@@ -49,7 +49,6 @@ export default class Model extends Observable {
       this.#destinations = destinations;
       this.#offersByType = offers;
     } catch(err) {
-      console.error('Failed to load data:', err);
       this.#points = [];
       this.#destinations = [];
       this.#offersByType = [];
@@ -59,47 +58,41 @@ export default class Model extends Observable {
   }
 
   async addPoint(point) {
-    try {
-      const addPoint = await this.#apiTrip.addPoint(point);
-      const adaptAddedPoint = this.#adaptPoint(addPoint);
+    const addPoint = await this.#apiTrip.addPoint(point);
+    const adaptAddedPoint = this.#adaptPoint(addPoint);
 
-      this.#points = [adaptAddedPoint, ...this.#points,];
-      this._notify(Updates.MAJOR, adaptAddedPoint);
-      return adaptAddedPoint;
-    } catch (err) {
-      console.error('Failed to add point:', err);
-      throw err;
-    }
+    this.#points = [adaptAddedPoint, ...this.#points,];
+    this._notify(Updates.MAJOR, adaptAddedPoint);
+    return adaptAddedPoint;
   }
 
   async updatePoint(point) {
-    try {
-      const updatedPoint = await this.#apiTrip.updatePoint(point);
-      const adaptUpdatedPoint = this.#adaptPoint(updatedPoint);
+    const updatedPoint = await this.#apiTrip.updatePoint(point);
+    const adaptUpdatedPoint = this.#adaptPoint(updatedPoint);
+    const index = this.#points.findIndex((p) => p.id === adaptUpdatedPoint.id);
 
-      this.#points = this.#points.map((p) => p.id === adaptUpdatedPoint.id ? adaptUpdatedPoint : p);
-      this._notify(Updates.PATCH, adaptUpdatedPoint);
-      return adaptUpdatedPoint;
-    } catch (err) {
-      console.error('Failed to update point:', err);
-      throw err;
+    if (index === -1) {
+      throw new Error('Can\'t update unexisting point in local model');
     }
+
+    this.#points = [...this.#points.slice(0, index), adaptUpdatedPoint, ...this.#points.slice(index + 1),];
+    this._notify(UpdateType.PATCH, adaptUpdatedPoint);
+    return adaptUpdatedPoint;
   }
 
   async deletePoint(pointToDelete) {
-    try {
-      await this.#apiTrip.deletePoint(pointToDelete);
-      
-      this.#points = this.#points.filter((point) => point.id !== pointToDelete.id);
-      this._notify(Updates.MAJOR, pointToDelete);
-    } catch (err) {
-      console.error('Failed to delete point:', err);
-      throw err;
+    await this.#apiTrip.deletePoint(pointToDelete);
+    const index = this.#points.findIndex((point) => point.id === pointToDelete.id);
+
+    if (index === -1) {
+      throw new Error('Can\'t delete unexisting point from local model');
     }
+    this.#points = [...this.#points.slice(0, index), ...this.#points.slice(index + 1),];
+    this._notify(UpdateType.MAJOR, pointToDelete);
   }
 
   #adaptPoint(point) {
-    const adaptedPoint = {
+    const adaptUpdatedPoint = {
       ...point,
       basePrice: point.base_price,
       dateFrom: point.date_from,
@@ -107,11 +100,11 @@ export default class Model extends Observable {
       isFavorite: point.is_favorite,
     };
 
-    delete adaptedPoint.base_price;
-    delete adaptedPoint.date_from;
-    delete adaptedPoint.date_to;
-    delete adaptedPoint.is_favorite;
+    delete adaptUpdatedPoint.base_price;
+    delete adaptUpdatedPoint.date_from;
+    delete adaptUpdatedPoint.date_to;
+    delete adaptUpdatedPoint.is_favorite;
 
-    return adaptedPoint;
+    return adaptUpdatedPoint;
   }
 }
