@@ -3,7 +3,7 @@ import FilterPresenter from './presenter/filter-presenter.js';
 import TripPresenter from './presenter/trip-presenter.js';
 import Model from './model/model.js';
 import FilterModel from './model/filters-model.js';
-import TripApi from './trip-api-service.js';
+import TripApi from './trip-api.js';
 import {getRandomStr} from './utils.js';
 import UiBlocker from './framework/ui-blocker/ui-blocker.js';
 
